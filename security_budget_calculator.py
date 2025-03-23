@@ -479,7 +479,7 @@ with tab1:
         # Add donut trace
         donut_fig.add_trace(go.Pie(
             values=[security_budget, non_security_it, non_it_budget],
-            labels=['Security Budget', 'Other IT Budget', 'Non-IT Budget'],
+            labels=['Security Budget', 'Other IT Budget', 'Revenue'],
             hole=0.6,
             marker_colors=['#96E4B0', '#008581', 'rgba(200, 200, 200, 0.7)'],  # Mint green, Teal, Light gray
             textinfo='label+percent',
@@ -536,8 +536,8 @@ with tab1:
         **Understanding the Budget Breakdown:**
         - The outer ring shows how your total revenue is divided
         - Green section: Security budget (% of IT budget)
-        - Teal section: Other IT spending
-        - Gray section: Non-IT budget
+        - Teal section: IT budget (other than security)
+        - Gray section: Revenue
         - Hover over sections to see detailed values
         """)
 
