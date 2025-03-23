@@ -139,7 +139,7 @@ Inspired by Oliver Rochford's analysis: "Why you are probably pricing your secur
 ''')
 
 # Create tabs for different views
-tab1, tab2 = st.tabs(["Budget Calculator", "Industry Benchmarks"])
+tab1, tab2, tab3 = st.tabs(["Budget Calculator", "Industry Benchmarks", "NAICS Analysis"])
 
 with tab2:
     # Display IT spend by industry chart
@@ -333,6 +333,223 @@ with tab2:
     These figures provide useful benchmarks for budget estimations, recognizing variations driven by regulatory demands, risk exposure, and industry-specific threats.
     """)
 
+with tab3:
+    st.header("NAICS Industry Analysis")
+    st.markdown("""
+    This tab shows the distribution of businesses by revenue tier based on NAICS industry codes.
+    Select one or more NAICS codes to see how many potential customers exist in each revenue range.
+    """)
+    
+    # Move NAICS selection to this tab
+    if "NAICS Code" in naics_df.columns:
+        # Create options combining code and name
+        naics_options = []
+        for code in naics_df["NAICS Code"].dropna().unique():
+            # Get the name for this code
+            name = naics_df[naics_df["NAICS Code"] == code]["NAICS Name"].iloc[0] if len(naics_df[naics_df["NAICS Code"] == code]) > 0 else ""
+            # Format as "code - name"
+            naics_options.append(f"{code} - {name}")
+        
+        # Store current selection in session state to handle the logic
+        if 'naics_selection' not in st.session_state:
+            st.session_state.naics_selection = ["All"]
+        
+        # Use multiselect instead of selectbox
+        selected_naics_options = st.multiselect(
+            "Select NAICS Industry Code(s)",
+            options=["All"] + sorted(naics_options),
+            default=st.session_state.naics_selection,
+            help="Select 'All' to include all industries, or select specific industries."
+        )
+        
+        # Update the session state
+        st.session_state.naics_selection = selected_naics_options
+        
+        # Handle the multiselect logic
+        if "All" in selected_naics_options and len(selected_naics_options) > 1:
+            # If All is selected along with other options, prioritize the specific selections
+            selected_naics_options.remove("All")
+            st.session_state.naics_selection = selected_naics_options
+        
+        # Handle empty selection (fallback to All)
+        if not selected_naics_options:
+            selected_naics_options = ["All"]
+            st.session_state.naics_selection = ["All"]
+        
+        # Convert the selections to NAICS codes for filtering
+        if "All" in selected_naics_options:
+            selected_naics = "All"
+        else:
+            # Extract just the codes from the selections (split on first " - ")
+            selected_naics = [option.split(" - ")[0] for option in selected_naics_options]
+            
+        # Filter NAICS data based on selection
+        if selected_naics != "All" and "NAICS Code" in naics_df.columns:
+            if isinstance(selected_naics, list):
+                # Filter for multiple selected NAICS codes
+                naics_df_filtered = naics_df[naics_df["NAICS Code"].isin(selected_naics)]
+            else:
+                # Single NAICS code
+                naics_df_filtered = naics_df[naics_df["NAICS Code"] == selected_naics]
+        else:
+            naics_df_filtered = naics_df.copy()
+            
+        # Display industry names for selected NAICS codes
+        if selected_naics == "All":
+            st.subheader("Analysis for all industries")
+        else:
+            industry_names = []
+            for code in selected_naics:
+                name_matches = naics_df[naics_df["NAICS Code"] == code]["NAICS Name"]
+                if len(name_matches) > 0:
+                    industry_names.append(f"{code} - {name_matches.iloc[0]}")
+                else:
+                    industry_names.append(code)
+            
+            st.subheader(f"Analysis for selected industries: {', '.join(industry_names)}")
+        
+        # Group by revenue tiers and calculate totals
+        revenue_tiers = [
+            (0, 50),      # $0-50M
+            (50, 100),    # $50-100M 
+            (100, 250),   # $100-250M
+            (250, 500),   # $250-500M
+            (500, 1000),  # $500M-1B
+            (1000, 2500), # $1-2.5B
+            (2500, 5000), # $2.5-5B
+            (5000, 10000), # $5-10B
+            (10000, 50000), # $10-50B
+            (50000, 100000) # $50B+
+        ]
+        
+        # Format revenue range for display
+        def format_revenue_range(low, high):
+            if low >= 1000:
+                low_str = f"${low/1000:.1f}B"
+            else:
+                low_str = f"${low}M"
+                
+            if high >= 1000:
+                high_str = f"${high/1000:.1f}B"
+            else:
+                high_str = f"${high}M"
+                
+            return f"{low_str} - {high_str}"
+        
+        # Create dataframe for the table
+        tier_analysis = []
+        
+        for low, high in revenue_tiers:
+            # Filter companies in this revenue tier
+            companies_in_tier = naics_df_filtered[
+                (naics_df_filtered['Sales ($Mil) Low'] <= high) & 
+                (naics_df_filtered['Sales ($Mil) High'] >= low)
+            ]
+            
+            company_count = companies_in_tier["Company Count"].sum()
+            
+            # Skip tiers with no companies
+            if company_count == 0:
+                continue
+                
+            # Calculate average revenue for TAM estimation
+            avg_revenue = (low + high) / 2
+            
+            # Calculate IT budget based on weighted average
+            avg_it_budget_pct = INDUSTRY_IT_SPEND["Weighted Average"]["typical"] / 100
+            avg_security_pct = INDUSTRY_SECURITY_SPEND["Weighted Average"]["typical"] / 100
+            
+            # Calculate TAM for this tier
+            it_budget_tam = avg_revenue * avg_it_budget_pct * company_count
+            security_tam = it_budget_tam * avg_security_pct
+            
+            tier_analysis.append({
+                "Revenue Tier": format_revenue_range(low, high),
+                "Number of Companies": int(company_count),
+                "Average Revenue ($M)": avg_revenue,
+                "IT Budget TAM ($M)": it_budget_tam,
+                "Security TAM ($M)": security_tam
+            })
+        
+        # Create the DataFrame
+        tier_df = pd.DataFrame(tier_analysis)
+        
+        # Calculate totals
+        total_companies = tier_df["Number of Companies"].sum()
+        total_it_tam = tier_df["IT Budget TAM ($M)"].sum()
+        total_security_tam = tier_df["Security TAM ($M)"].sum()
+        
+        # Format values for display
+        tier_df["Average Revenue ($M)"] = tier_df["Average Revenue ($M)"].apply(
+            lambda x: f"${x:.1f}M" if x < 1000 else f"${x/1000:.1f}B"
+        )
+        tier_df["IT Budget TAM ($M)"] = tier_df["IT Budget TAM ($M)"].apply(
+            lambda x: f"${x:.1f}M" if x < 1000 else f"${x/1000:.1f}B"
+        )
+        tier_df["Security TAM ($M)"] = tier_df["Security TAM ($M)"].apply(
+            lambda x: f"${x:.1f}M" if x < 1000 else f"${x/1000:.1f}B"
+        )
+        
+        # Add TAM metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Companies", f"{total_companies:,.0f}")
+        with col2:
+            it_tam_display = f"${total_it_tam:.1f}M" if total_it_tam < 1000 else f"${total_it_tam/1000:.1f}B"
+            st.metric("Total IT Budget TAM", it_tam_display)
+        with col3:
+            security_tam_display = f"${total_security_tam:.1f}M" if total_security_tam < 1000 else f"${total_security_tam/1000:.1f}B"
+            st.metric("Total Security TAM", security_tam_display)
+        
+        # Show the table
+        st.subheader("Business Count by Revenue Tier")
+        st.dataframe(tier_df, use_container_width=True)
+        
+        # Create chart for visualization
+        st.subheader("Distribution of Companies by Revenue Tier")
+        
+        # Prepare data for chart
+        chart_data = tier_df.copy()
+        chart_data["Revenue Tier"] = pd.Categorical(chart_data["Revenue Tier"], categories=chart_data["Revenue Tier"].tolist())
+        
+        fig = px.bar(
+            chart_data,
+            x="Revenue Tier",
+            y="Number of Companies",
+            title="Number of Companies by Revenue Tier",
+            labels={"Number of Companies": "Number of Companies", "Revenue Tier": "Revenue Range"},
+            text="Number of Companies"
+        )
+        
+        fig.update_layout(
+            xaxis={"categoryorder": "array", "categoryarray": chart_data["Revenue Tier"].tolist()},
+            yaxis_title="Number of Companies",
+            xaxis_title="Revenue Range",
+            height=500,
+            font=dict(family="Arial, sans-serif", size=12),
+            plot_bgcolor='rgba(240, 240, 240, 0.8)'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Add explanation
+        st.markdown("""
+        ### Understanding the Analysis
+        
+        - **Revenue Tier**: Revenue range for companies
+        - **Number of Companies**: Count of companies in this revenue tier
+        - **Average Revenue**: Midpoint of the revenue range
+        - **IT Budget TAM**: Total Addressable Market for IT budget (based on weighted average IT spend %)
+        - **Security TAM**: Total Addressable Market for security budget (based on weighted average security spend %)
+        
+        TAM calculations use industry averages of:
+        - IT Budget: """+str(INDUSTRY_IT_SPEND["Weighted Average"]["typical"])+"""% of revenue
+        - Security Budget: """+str(INDUSTRY_SECURITY_SPEND["Weighted Average"]["typical"])+"""% of IT budget
+        """)
+        
+    else:
+        st.error("NAICS Code column not found in the dataset. Please check your Excel file structure.")
+
 with tab1:
     # Create columns for sidebar and main content
     main_content, sidebar = st.columns([3, 1])
@@ -340,52 +557,20 @@ with tab1:
     with sidebar:
         st.header("Budget Settings")
 
-# NAICS Selection
-        if "NAICS Code" in naics_df.columns:
-            # Create options combining code and name
-            naics_options = []
-            for code in naics_df["NAICS Code"].dropna().unique():
-                # Get the name for this code
-                name = naics_df[naics_df["NAICS Code"] == code]["NAICS Name"].iloc[0] if len(naics_df[naics_df["NAICS Code"] == code]) > 0 else ""
-                # Format as "code - name"
-                naics_options.append(f"{code} - {name}")
+# NAICS Selection - Remove from sidebar since it's now in tab3
+        # Get NAICS selection from session state
+        if 'naics_selection' not in st.session_state:
+            st.session_state.naics_selection = ["All"]
             
-            # Store current selection in session state to handle the logic
-            if 'naics_selection' not in st.session_state:
-                st.session_state.naics_selection = ["All"]
-            
-            # Use multiselect instead of selectbox
-            selected_naics_options = st.multiselect(
-                "Select NAICS Industry Code(s)",
-                options=["All"] + sorted(naics_options),
-                default=st.session_state.naics_selection,
-                help="Select 'All' to include all industries, or select specific industries."
-            )
-            
-            # Update the session state
-            st.session_state.naics_selection = selected_naics_options
-            
-            # Handle the multiselect logic
-            if "All" in selected_naics_options and len(selected_naics_options) > 1:
-                # If All is selected along with other options, prioritize the specific selections
-                selected_naics_options.remove("All")
-                st.session_state.naics_selection = selected_naics_options
-            
-            # Handle empty selection (fallback to All)
-            if not selected_naics_options:
-                selected_naics_options = ["All"]
-                st.session_state.naics_selection = ["All"]
-            
-            # Convert the selections to NAICS codes for filtering
-            if "All" in selected_naics_options:
-                selected_naics = "All"
-            else:
-                # Extract just the codes from the selections (split on first " - ")
-                selected_naics = [option.split(" - ")[0] for option in selected_naics_options]
-        else:
-            st.error("NAICS Code column not found in the dataset. Please check your Excel file structure.")
+        selected_naics_options = st.session_state.naics_selection
+        
+        # Convert the selections to NAICS codes for filtering
+        if "All" in selected_naics_options:
             selected_naics = "All"
-
+        else:
+            # Extract just the codes from the selections (split on first " - ")
+            selected_naics = [option.split(" - ")[0] for option in selected_naics_options]
+            
         # Industry Presets for IT Budget
         st.subheader("IT Budget Settings")
 
