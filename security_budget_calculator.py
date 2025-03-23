@@ -366,9 +366,16 @@ with tab1:
         # Create the chart
         fig = go.Figure()
         
-        # Add bar traces for each percentage
+        # Add bar traces for percentages around the selected security percentage
         bar_colors = ["#4285F4", "#34A853", "#FBBC05", "#EA4335"]
-        security_percentages = [5, 10, 15, 20]
+        selected_security = st.session_state.security_percentage
+        # Create percentages centered around the selected value
+        security_percentages = [
+            max(1, selected_security - 6),
+            max(1, selected_security - 3),
+            selected_security,
+            min(25, selected_security + 3)
+        ]
         
         # Bar width configuration for clearer grouping
         bar_width = 0.15
@@ -379,12 +386,17 @@ with tab1:
         for idx, percent in enumerate(security_percentages):
             security_budget = revenue_array * (st.session_state.it_percentage / 100) * (percent / 100)
             
+            # Highlight the selected percentage
+            is_selected = percent == selected_security
+            marker_color = bar_colors[idx]
+            marker_line_width = 3 if is_selected else 2
+            
             fig.add_trace(go.Bar(
                 x=x_positions + (idx - 1.5) * bar_width,  # grouped bars
                 y=security_budget,
-                name=f"{percent}% of IT Budget",
-                marker_color=bar_colors[idx],
-                marker_line_width=2,  # Thicker border
+                name=f"{percent}% of IT Budget{' (Selected)' if is_selected else ''}",
+                marker_color=marker_color,
+                marker_line_width=marker_line_width,  # Thicker border for selected
                 marker_line_color='rgba(0,0,0,0.7)',  # Darker border
                 width=bar_width,
                 text=[f"${val:.2f}M" for val in security_budget],
