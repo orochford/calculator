@@ -1150,11 +1150,18 @@ with tab2:
     
     # Update layout for minimalist design
     bubble_fig.update_layout(
-        title=None,
+        title=dict(
+            text='',  # Ensure empty title
+            x=0.5,
+            y=0.95
+        ),
         xaxis_title=None,
-        yaxis_title='IT Budget %',
+        yaxis_title=dict(
+            text='IT Budget %',
+            standoff=10  # Add some padding between axis and title
+        ),
         height=600,
-        margin=dict(l=60, r=40, t=80, b=100),
+        margin=dict(l=60, r=40, t=40, b=100),  # Reduced top margin
         plot_bgcolor='white',
         xaxis=dict(
             showgrid=False,
@@ -1166,7 +1173,7 @@ with tab2:
                 size=12,
                 family='Arial'
             ),
-            showticklabels=False,  # Hide x-axis labels since we're showing them as annotations
+            showticklabels=False,
             range=[-0.5, len(bubble_df) - 0.5]
         ),
         yaxis=dict(
@@ -1199,7 +1206,7 @@ with tab2:
     # Add a note about bubble sizes in a more subtle way
     bubble_fig.add_annotation(
         x=0.02,
-        y=1.08,
+        y=1.02,  # Lowered position
         xref='paper',
         yref='paper',
         text='Bubble size represents Security Budget %',
