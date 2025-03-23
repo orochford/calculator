@@ -262,12 +262,13 @@ with tab1:
             - Operational requirements
             - Industry competition
             """
+            new_it_value = float(st.session_state.it_percentage)
             st.session_state.it_percentage = st.slider(
                 "IT Budget (% of Revenue)",
-                min_value=1,
-                max_value=20,
-                value=st.session_state.it_percentage,
-                step=1,
+                min_value=1.0,
+                max_value=20.0,
+                value=new_it_value,
+                step=0.1,
                 key="sidebar_it_slider",
                 help=custom_it_help
             )
@@ -281,12 +282,13 @@ with tab1:
             - Risk appetite
             - Security maturity
             """
+            new_security_value = float(st.session_state.security_percentage)
             st.session_state.security_percentage = st.slider(
                 "Security Budget (% of IT Budget)",
-                min_value=1,
-                max_value=25,
-                value=st.session_state.security_percentage,
-                step=1,
+                min_value=1.0,
+                max_value=25.0,
+                value=new_security_value,
+                step=0.1,
                 key="sidebar_security_slider",
                 help=custom_security_help
             )
@@ -308,11 +310,25 @@ with tab1:
                 max_it_help = "Maximum IT budget percentage for aggressive scenario"
                 typical_it_help = "Most likely IT budget percentage based on your assessment"
                 
-                min_it_percentage = st.slider("Min IT Budget (%)", 1, 5, 3, help=min_it_help)
-                max_it_percentage = st.slider("Max IT Budget (%)", 6, 20, 8, help=max_it_help)
+                min_it_percentage = st.slider("Min IT Budget (%)", 
+                    min_value=0.1, 
+                    max_value=10.0, 
+                    value=3.0, 
+                    step=0.1, 
+                    help=min_it_help
+                )
+                max_it_percentage = st.slider("Max IT Budget (%)", 
+                    min_value=min_it_percentage, 
+                    max_value=30.0, 
+                    value=8.0, 
+                    step=0.1, 
+                    help=max_it_help
+                )
                 typical_it_percentage = st.slider("Typical IT Budget (%)", 
-                    min_it_percentage, max_it_percentage, 
-                    (min_it_percentage + max_it_percentage) // 2,
+                    min_value=min_it_percentage, 
+                    max_value=max_it_percentage, 
+                    value=(min_it_percentage + max_it_percentage) / 2,
+                    step=0.1,
                     help=typical_it_help
                 )
                 
@@ -320,11 +336,25 @@ with tab1:
                 max_security_help = "Maximum security budget percentage for aggressive scenario"
                 typical_security_help = "Most likely security budget percentage based on your assessment"
                 
-                min_security_percentage = st.slider("Min Security Budget (%)", 1, 8, 5, help=min_security_help)
-                max_security_percentage = st.slider("Max Security Budget (%)", 11, 25, 15, help=max_security_help)
+                min_security_percentage = st.slider("Min Security Budget (%)", 
+                    min_value=0.1, 
+                    max_value=15.0, 
+                    value=5.0, 
+                    step=0.1, 
+                    help=min_security_help
+                )
+                max_security_percentage = st.slider("Max Security Budget (%)", 
+                    min_value=min_security_percentage, 
+                    max_value=40.0, 
+                    value=15.0, 
+                    step=0.1, 
+                    help=max_security_help
+                )
                 typical_security_percentage = st.slider("Typical Security Budget (%)", 
-                    min_security_percentage, max_security_percentage,
-                    (min_security_percentage + max_security_percentage) // 2,
+                    min_value=min_security_percentage, 
+                    max_value=max_security_percentage,
+                    value=(min_security_percentage + max_security_percentage) / 2,
+                    step=0.1,
                     help=typical_security_help
                 )
         else:
