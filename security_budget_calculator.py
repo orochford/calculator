@@ -7,6 +7,7 @@ from PIL import Image
 import base64
 import io
 import plotly.io as pio
+import math
 
 # Set page layout to wide
 st.set_page_config(layout="wide", menu_items=None)
@@ -1039,8 +1040,190 @@ with tab2:
         }
     )
     
-    # Add helpful information
-    st.info("💡 **Tip**: Click the fullscreen button in the top-right corner of any chart for better viewing.")
+    # Add bubble chart for industry benchmarks
+    st.subheader("Industry Budget Distribution")
+    st.markdown("""
+    This bubble chart shows the relationship between industries and their budget allocations.
+    - Bubble size represents the combined IT and security budget
+    - Larger bubbles indicate higher total investment in technology
+    """)
+    
+    # Create data for bubble chart
+    bubble_data = []
+    
+    # Define industries in desired order
+    industries = [
+        'Retail',
+        'Manufacturing',
+        'Transportation',  # Shortened for better display
+        'Energy',  # Shortened for better display
+        'Education',
+        'Healthcare',
+        'Weighted Avg',  # Shortened for better display
+        'Government',  # Shortened for better display
+        'Financial',  # Shortened for better display
+        'Technology'
+    ]
+    
+    for industry in industries:
+        base_industry = industry
+        if industry == 'Transportation':
+            base_industry = 'Transportation & Logistics'
+        elif industry == 'Energy':
+            base_industry = 'Energy & Utilities'
+        elif industry == 'Weighted Avg':
+            base_industry = 'Weighted Average'
+        elif industry == 'Government':
+            base_industry = 'Government/Public Sector'
+        elif industry == 'Financial':
+            base_industry = 'Financial Services'
+            
+        if base_industry in industry_presets:
+            it_typical = industry_presets[base_industry]['it_typical']
+            security_typical = industry_presets[base_industry]['security_typical']
+            
+            bubble_data.append({
+                'Industry': industry,
+                'Full Industry': base_industry,
+                'IT Budget': it_typical,
+                'Security Budget': security_typical
+            })
+    
+    # Convert to DataFrame
+    bubble_df = pd.DataFrame(bubble_data)
+    
+    # Create evenly spaced x-coordinates
+    x_positions = np.arange(len(bubble_df))
+    
+    # Create bubble chart
+    bubble_fig = go.Figure()
+    
+    # Add bubble trace
+    bubble_fig.add_trace(go.Scatter(
+        x=x_positions,
+        y=bubble_df['IT Budget'],
+        mode='markers',  # Removed text mode since we'll add industry names as annotations
+        marker=dict(
+            size=bubble_df['Security Budget'] * 5,  # Size based on security budget
+            color='rgba(147, 224, 220, 0.8)',  # Lighter turquoise with more opacity
+            line=dict(color='rgba(147, 224, 220, 0.9)', width=1)
+        ),
+        hovertemplate="<b>%{customdata[0]}</b><br>" +
+                     "IT Budget: %{y:.1f}%<br>" +
+                     "Security Budget: %{marker.size/5:.1f}%<extra></extra>",
+        customdata=bubble_df[['Full Industry']].values,
+        name=''
+    ))
+    
+    # Add annotations for IT budget values above bubbles
+    for idx, row in bubble_df.iterrows():
+        # Add IT Budget percentage above bubble
+        bubble_fig.add_annotation(
+            x=x_positions[idx],
+            y=row['IT Budget'],
+            text=f"{row['IT Budget']:.1f}%",
+            yshift=35,
+            showarrow=False,
+            font=dict(
+                size=14,
+                color='rgba(0, 0, 0, 0.7)',
+                family='Arial'
+            )
+        )
+        # Add industry name below bubble
+        bubble_fig.add_annotation(
+            x=x_positions[idx],
+            y=row['IT Budget'],
+            text=row['Industry'],
+            yshift=-35,  # Position below bubble
+            showarrow=False,
+            font=dict(
+                size=12,
+                color='rgba(0, 0, 0, 0.7)',
+                family='Arial'
+            ),
+            textangle=-45  # Angle the text for better readability
+        )
+    
+    # Calculate y-axis range with nice intervals
+    max_y = 15  # Fixed max for better visualization
+    
+    # Update layout for minimalist design
+    bubble_fig.update_layout(
+        title=None,
+        xaxis_title=None,
+        yaxis_title='IT Budget %',
+        height=600,
+        margin=dict(l=60, r=40, t=80, b=100),
+        plot_bgcolor='white',
+        xaxis=dict(
+            showgrid=False,
+            showline=True,
+            linecolor='black',
+            linewidth=1,
+            ticks='outside',
+            tickfont=dict(
+                size=12,
+                family='Arial'
+            ),
+            showticklabels=False,  # Hide x-axis labels since we're showing them as annotations
+            range=[-0.5, len(bubble_df) - 0.5]
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='rgba(128, 128, 128, 0.15)',
+            gridwidth=1,
+            griddash='dash',
+            showline=True,
+            linecolor='black',
+            linewidth=1,
+            ticks='outside',
+            tickfont=dict(
+                size=12,
+                family='Arial'
+            ),
+            range=[0, max_y],
+            ticksuffix='%',
+            dtick=5,
+            tickmode='array',
+            ticktext=['0%', '5%', '10%', '15%'],
+            tickvals=[0, 5, 10, 15]
+        ),
+        showlegend=False,
+        font=dict(
+            family='Arial',
+            size=14
+        )
+    )
+    
+    # Add a note about bubble sizes in a more subtle way
+    bubble_fig.add_annotation(
+        x=0.02,
+        y=1.08,
+        xref='paper',
+        yref='paper',
+        text='Bubble size represents Security Budget %',
+        showarrow=False,
+        font=dict(
+            size=12,
+            color='rgba(0, 0, 0, 0.6)',
+            family='Arial'
+        ),
+        align='left'
+    )
+    
+    # Display the bubble chart
+    st.plotly_chart(
+        bubble_fig, 
+        use_container_width=True,
+        config={
+            'displayModeBar': False,
+            'responsive': True
+        }
+    )
+    
+    # Remove the legend since we now have labels on the chart
+    st.markdown("---")
     
     # Display industry benchmark reference table
     st.subheader("Industry Benchmark Reference Table")
