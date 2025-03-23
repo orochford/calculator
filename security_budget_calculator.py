@@ -602,7 +602,7 @@ with tab1:
         
         # Get industry-specific context
         if selected_industry != "Custom":
-            industry_context = f"Based on **{selected_industry}** industry benchmarks"
+            industry_context = f"Based on {selected_industry} industry benchmarks"
         else:
             industry_context = "Based on your custom settings"
 
@@ -637,7 +637,7 @@ with tab1:
             min_budget_display = f"${min_budget:.2f}M" if min_budget < 1000 else f"${min_budget/1000:.2f}B"
             max_budget_display = f"${max_budget:.2f}M" if max_budget < 1000 else f"${max_budget/1000:.2f}B"
             
-            range_text = f", with a possible range of **{min_budget_display} to {max_budget_display}** depending on budget allocation"
+            range_text = f", with a possible range of {min_budget_display} to {max_budget_display} depending on budget allocation"
         else:
             range_text = ""
 
@@ -650,11 +650,22 @@ with tab1:
         with col3:
             st.metric("Security Budget", recommended_budget_display, f"{security_budget_percentage}% of IT budget")
             
-        st.markdown(f"""
-        {industry_context}, for businesses in {industry_text} with annual revenue around **{selected_rev_display}**, 
-        a realistic **security budget** would typically be around **{recommended_budget_display}**, with a 
-        possible range of **{min_budget_display} to {max_budget_display}** depending on budget allocation.
-        """)
+        # Use HTML formatting for better control
+        summary_html = f"""
+        <p>{industry_context}, for businesses in {industry_text} with annual revenue around 
+        <span style="font-weight: normal;">{selected_rev_display}</span>, 
+        a realistic security budget would typically be around 
+        <span style="font-weight: normal;">{recommended_budget_display}</span>"""
+        
+        if show_range:
+            summary_html += f""", with a possible range of 
+            <span style="font-weight: normal;">{min_budget_display}</span> to 
+            <span style="font-weight: normal;">{max_budget_display}</span> 
+            depending on budget allocation."""
+            
+        summary_html += "</p>"
+        
+        st.markdown(summary_html, unsafe_allow_html=True)
 
         # Interactive Chart
         st.subheader("Security Budget Chart")
@@ -715,7 +726,7 @@ with tab1:
                 width=step_size * 0.15,  # Adjust bar width based on step size
                 text=reference_df[f"Security Budget {sec_pct}%"].apply(lambda x: f"${x:.1f}M" if x < 1000 else f"${x/1000:.1f}B"),
                 textposition="outside",
-                textfont=dict(size=9),
+                textfont=dict(size=14),  # Increased text size from 9 to 14
                 showlegend=True
             ))
         
@@ -729,7 +740,7 @@ with tab1:
             marker=dict(size=5),
             text=["Lower" if i == len(reference_df)//4 else "" for i in range(len(reference_df))],
             textposition="top center",
-            textfont=dict(size=10, color='#1f77b4')
+            textfont=dict(size=16, color='#1f77b4')  # Increased text size from 10 to 16
         ))
         
         fig_ref.add_trace(go.Scatter(
@@ -738,10 +749,10 @@ with tab1:
             y=reference_df["Security Budget 10%"],
             mode='lines+markers+text',
             line=dict(color='#ff7f0e', width=2, dash='dot'),
-            marker=dict(size=6),
+            marker=dict(size=8),  # Increased marker size
             text=["Typical" if i == len(reference_df)//2 else "" for i in range(len(reference_df))],
             textposition="top center",
-            textfont=dict(size=10, color='#ff7f0e')
+            textfont=dict(size=16, color='#ff7f0e')  # Increased text size from 10 to 16
         ))
         
         fig_ref.add_trace(go.Scatter(
@@ -753,7 +764,7 @@ with tab1:
             marker=dict(size=5),
             text=["Upper" if i == 3*len(reference_df)//4 else "" for i in range(len(reference_df))],
             textposition="top center",
-            textfont=dict(size=10, color='#d62728')
+            textfont=dict(size=16, color='#d62728')  # Increased text size from 10 to 16
         ))
         
         # Add custom trend line if enabled
@@ -768,10 +779,10 @@ with tab1:
                 y=reference_df[f"Custom Security Budget {custom_security_percentage}%"],
                 mode='lines+text',
                 line=dict(color='#9467bd', width=2, dash='dash'),
-                marker=dict(size=7, symbol='star'),
+                marker=dict(size=8, symbol='star'),  # Increased marker size
                 text=[custom_line_name if i == len(reference_df)//3 else "" for i in range(len(reference_df))],
                 textposition="top center",
-                textfont=dict(size=10, color='#9467bd')
+                textfont=dict(size=16, color='#9467bd')  # Increased text size from 10 to 16
             ))
         
         # Layout improvements
@@ -781,8 +792,8 @@ with tab1:
             yaxis_title="Security Budget (Million $)",
             legend_title="Budget Percentages",
             barmode='group',
-            bargap=0.15,     # Gap between bars of adjacent location coordinates
-            bargroupgap=0.1, # Gap between bars of the same location coordinates
+            bargap=0.05,     # Reduced gap between bars from 0.15 to 0.05
+            bargroupgap=0.02, # Reduced gap between bar groups from 0.1 to 0.02
             height=500,
             font=dict(family="Arial, sans-serif", size=12),
             plot_bgcolor='rgba(240, 240, 240, 0.8)',
@@ -801,7 +812,7 @@ with tab1:
             bordercolor="rgba(0, 0, 0, 0.5)",
             borderwidth=1,
             borderpad=4,
-            font=dict(size=10)
+            font=dict(size=14)  # Increased text size from 10 to 14
         )
         
         # Improve x-axis formatting - reduce number of ticks for clarity
