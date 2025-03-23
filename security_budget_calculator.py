@@ -380,15 +380,15 @@ with tab1:
     # Layout for main content
     main_col1, main_col2 = st.columns([2, 1])
     
-    # First column - Budget Summary FIRST, then chart
-    with main_col1:
-        st.subheader("Budget Summary")
+    # Second column - Budget Controls FIRST
+    with main_col2:
+        st.subheader("Budget Controls")
         st.markdown("""
-        Enter your organization's annual revenue and adjust the budget percentages to calculate IT and security budgets. 
-        The calculator will automatically update all visualizations based on your inputs.
+        Adjust the values below to calculate IT and security budgets. 
+        The chart and calculations will automatically update based on your inputs.
         """)
         
-        # Annual Revenue input with help text
+        # Get annual revenue input with help text
         revenue_help = """
         Enter your organization's annual revenue in millions of dollars. 
         For example:
@@ -410,14 +410,14 @@ with tab1:
         Industry averages typically range from 2% to 15% depending on sector.
         Higher percentages are common in technology-focused industries.
         """
-        st.session_state.it_percentage = st.slider(
+        new_it_percentage = st.slider(
             "IT Budget (% of Revenue)", 
             min_value=1.0,
             max_value=20.0,
             value=float(st.session_state.it_percentage),
             step=0.1,
             help=it_help,
-            key="it_percentage_main"
+            key="it_percentage_control"
         )
         
         # Security Budget slider with help text
@@ -430,42 +430,109 @@ with tab1:
         - Data sensitivity
         - Compliance needs
         """
-        st.session_state.security_percentage = st.slider(
+        new_security_percentage = st.slider(
             "Security Budget (% of IT Budget)", 
             min_value=1.0,
             max_value=25.0,
             value=float(st.session_state.security_percentage),
             step=0.1,
             help=security_help,
-            key="security_percentage_main"
+            key="security_percentage_control"
         )
-        
-        # Format the annual revenue with M/B suffix
-        annual_revenue_formatted = f"${annual_revenue:,.2f}M" if annual_revenue < 1000 else f"${annual_revenue/1000:,.2f}B"
-        
-        # Calculate budgets
-        it_budget = annual_revenue * (st.session_state.it_percentage / 100)
-        security_budget = it_budget * (st.session_state.security_percentage / 100)
-        
-        # Format with M/B suffix
-        it_budget_formatted = f"${it_budget:,.2f}M" if it_budget < 1000 else f"${it_budget/1000:,.2f}B"
-        security_budget_formatted = f"${security_budget:,.2f}M" if security_budget < 1000 else f"${security_budget/1000:,.2f}B"
-        
-        # Display metrics in a row with explanatory text
+
+        # Update session state values
+        st.session_state.it_percentage = new_it_percentage
+        st.session_state.security_percentage = new_security_percentage
+
+        st.divider()
+
+        # Display calculated budgets
+        st.subheader("Calculated Budgets")
         st.markdown("""
         Below are your calculated budgets based on the selected percentages. 
         The delta values show the percentage relationship between each budget level.
         """)
-        metric_col1, metric_col2, metric_col3 = st.columns(3)
-        with metric_col1:
-            st.metric("Annual Revenue", annual_revenue_formatted)
-        with metric_col2:
-            st.metric("IT Budget", it_budget_formatted, f"{st.session_state.it_percentage}% of Revenue")
-        with metric_col3:
-            st.metric("Security Budget", security_budget_formatted, f"{st.session_state.security_percentage}% of IT Budget")
-        
+
+        # Calculate and format budgets
+        annual_revenue_formatted = f"${annual_revenue:,.2f}M" if annual_revenue < 1000 else f"${annual_revenue/1000:,.2f}B"
+        it_budget = annual_revenue * (new_it_percentage / 100)
+        security_budget = it_budget * (new_security_percentage / 100)
+        it_budget_formatted = f"${it_budget:,.2f}M" if it_budget < 1000 else f"${it_budget/1000:,.2f}B"
+        security_budget_formatted = f"${security_budget:,.2f}M" if security_budget < 1000 else f"${security_budget/1000:,.2f}B"
+
+        # Display metrics
+        st.metric("Annual Revenue", annual_revenue_formatted)
+        st.metric("IT Budget", it_budget_formatted, f"{new_it_percentage}% of Revenue")
+        st.metric("Security Budget", security_budget_formatted, f"{new_security_percentage}% of IT Budget")
+
         st.divider()
+
+        # Add custom trend line control
+        st.subheader("Additional Controls")
+        custom_trend = st.checkbox("Add Custom Trend Line", value=False, key="custom_trend_checkbox")
+        if custom_trend:
+            custom_security_percentage = st.slider(
+                "Custom Security Budget (%)",
+                min_value=1,
+                max_value=30,
+                value=12,
+                step=1,
+                key="custom_security_percentage_slider"
+            )
+            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget", key="custom_line_name_input")
+
+        st.divider()
+
+        # Industry Context
+        st.subheader("Industry Context")
+        st.markdown("""
+        This section shows how your selected budget percentages compare to industry standards.
+        Use this information to benchmark your budget allocations against industry peers.
+        """)
         
+        # Add contextual information with enhanced formatting
+        if selected_industry != "Custom":
+            st.markdown(f"""
+            ### {selected_industry}
+            
+            #### Industry Research Benchmarks
+            - **IT Budget Range**: {min_it_percentage}% to {max_it_percentage}% of revenue
+                - Typical for {selected_industry}
+                - Based on industry research
+            
+            - **Security Budget Range**: {min_security_percentage}% to {max_security_percentage}% of IT budget
+                - Typical for {selected_industry}
+                - Based on security maturity level
+            
+            #### Your Current Settings
+            - IT Budget: **{new_it_percentage:.1f}%** of revenue
+                - {" Above" if new_it_percentage > typical_it_percentage else " Below"} industry typical ({typical_it_percentage}%)
+            
+            - Security Budget: **{new_security_percentage:.1f}%** of IT budget
+                - {" Above" if new_security_percentage > typical_security_percentage else " Below"} industry typical ({typical_security_percentage}%)
+            """)
+        else:
+            st.markdown(f"""
+            ### Custom Budget Settings
+            
+            You have selected custom budget percentages outside of predefined industry ranges.
+            Consider these factors when setting custom budgets:
+            - Business objectives
+            - Risk tolerance
+            - Regulatory requirements
+            - Technology dependencies
+            
+            #### Your Settings
+            - IT Budget: **{new_it_percentage:.1f}%** of revenue
+            - Security Budget: **{new_security_percentage:.1f}%** of IT budget
+            
+            {"#### Custom Ranges" if show_ranges else ""}
+            {f"- IT Budget: **{min_it_percentage}% to {max_it_percentage}%**" if show_ranges else ""}
+            {f"- Security Budget: **{min_security_percentage}% to {max_security_percentage}%**" if show_ranges else ""}
+            """)
+
+    # First column - Chart
+    with main_col1:
         # Create the chart with enhanced description
         st.subheader("Security Budget Chart")
         st.markdown("""
@@ -480,7 +547,7 @@ with tab1:
         
         # Add bar traces for percentages around the selected security percentage
         bar_colors = ["#008581", "#4C9C8B", "#96E4B0", "#FFDAE8"]  # New teal-to-pink gradient
-        selected_security = st.session_state.security_percentage
+        selected_security = new_security_percentage  # Use the new value
         # Create percentages centered around the selected value
         security_percentages = [
             max(1, selected_security - 6),
@@ -495,8 +562,12 @@ with tab1:
         # Revenue array for bars placement
         x_positions = np.arange(len(revenue_array))
         
+        # Always use new_it_percentage for bars
+        display_it_percentage = new_it_percentage
+        
         for idx, percent in enumerate(security_percentages):
-            security_budget = revenue_array * (st.session_state.it_percentage / 100) * (percent / 100)
+            # Use the same IT percentage as trend lines for consistency
+            security_budget = revenue_array * (display_it_percentage / 100) * (percent / 100)
             
             # Highlight the selected percentage
             is_selected = percent == selected_security
@@ -506,7 +577,7 @@ with tab1:
             fig.add_trace(go.Bar(
                 x=x_positions + (idx - 1.5) * bar_width,  # grouped bars
                 y=security_budget,
-                name=f"{percent}% of IT Budget{' (Selected)' if is_selected else ''}",
+                name=f"{percent}% of IT Budget ({display_it_percentage}% IT){' (Selected)' if is_selected else ''}",
                 marker_color=marker_color,
                 marker_line_width=marker_line_width,  # Thicker border for selected
                 marker_line_color='rgba(0,0,0,0.7)',  # Darker border
@@ -519,10 +590,14 @@ with tab1:
                     color="rgba(0,0,0,0.9)"  # Darker text
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                            f"<b>Security Budget ({percent}%):</b> $%{{y:.2f}}M<extra></extra>",
+                            "<b>Calculation:</b><br>" +
+                            f"IT Budget: {display_it_percentage}% of Revenue<br>" +
+                            f"Security Budget: {percent}% of IT Budget<br>" +
+                            f"Final: {percent}% of {display_it_percentage}% = {(display_it_percentage * percent / 100):.2f}% of Revenue<br>" +
+                            "<b>Result:</b> $%{y:.2f}M<extra></extra>",
                 customdata=revenue_array
             ))
-        
+
         # Add trend lines for industry standard scenarios if ranges are enabled
         if show_ranges:
             # Lower bound trend line
@@ -541,7 +616,11 @@ with tab1:
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                            f"<b>Lower Security Budget ({min_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
+                            f"<b>Lower Bound Calculation:</b><br>" +
+                            f"IT Budget: {min_it_percentage}% of Revenue<br>" +
+                            f"Security Budget: {min_security_percentage}% of IT Budget<br>" +
+                            f"Final: {min_security_percentage}% of {min_it_percentage}% = {(min_it_percentage * min_security_percentage / 100):.2f}% of Revenue<br>" +
+                            "<b>Result:</b> $%{y:.2f}M<extra></extra>",
                 customdata=revenue_array
             ))
             
@@ -561,7 +640,11 @@ with tab1:
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                            f"<b>Upper Security Budget ({max_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
+                            f"<b>Upper Bound Calculation:</b><br>" +
+                            f"IT Budget: {max_it_percentage}% of Revenue<br>" +
+                            f"Security Budget: {max_security_percentage}% of IT Budget<br>" +
+                            f"Final: {max_security_percentage}% of {max_it_percentage}% = {(max_it_percentage * max_security_percentage / 100):.2f}% of Revenue<br>" +
+                            "<b>Result:</b> $%{y:.2f}M<extra></extra>",
                 customdata=revenue_array
             ))
             
@@ -581,25 +664,19 @@ with tab1:
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                            f"<b>Typical Security Budget ({typical_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
+                            f"<b>Typical Calculation:</b><br>" +
+                            f"IT Budget: {typical_it_percentage}% of Revenue<br>" +
+                            f"Security Budget: {typical_security_percentage}% of IT Budget<br>" +
+                            f"Final: {typical_security_percentage}% of {typical_it_percentage}% = {(typical_it_percentage * typical_security_percentage / 100):.2f}% of Revenue<br>" +
+                            "<b>Result:</b> $%{y:.2f}M<extra></extra>",
                 customdata=revenue_array
             ))
-        
+
         # Add custom trend line if enabled
-        custom_trend = st.checkbox("Add Custom Trend Line", value=False, key="custom_trend_checkbox")
         if custom_trend:
-            custom_security_percentage = st.slider(
-                "Custom Security Budget (%)",
-                min_value=1,
-                max_value=30,
-                value=12,
-                step=1,
-                key="custom_security_percentage_slider"
-            )
-            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget", key="custom_line_name_input")
-            custom_security_budget = revenue_array * (st.session_state.it_percentage / 100) * (custom_security_percentage / 100)
+            custom_security_budget = revenue_array * (new_it_percentage / 100) * (custom_security_percentage / 100)
             fig.add_trace(go.Scatter(
-                x=x_positions,  # Use x_positions for consistency
+                x=x_positions,
                 y=custom_security_budget,
                 mode='lines+markers+text',
                 name=custom_line_name,
@@ -619,7 +696,14 @@ with tab1:
         
         # Update layout for better chart presentation with thicker bars
         fig.update_layout(
-            title=f"Security Budget by Annual Revenue (IT Budget: {st.session_state.it_percentage}% of Revenue)",
+            title=dict(
+                text=f"Security Budget by Annual Revenue",
+                y=0.99,  # Move title higher but keep within 0-1 range
+                x=0.5,
+                xanchor='center',
+                yanchor='top',
+                font=dict(size=16)
+            ),
             xaxis_title="Annual Revenue (Million $)",
             yaxis_title="Security Budget (Million $)",
             barmode='group',
@@ -630,20 +714,32 @@ with tab1:
             autosize=True,
             font=dict(family="Arial", size=11),
             plot_bgcolor='white',
-            margin=dict(l=80, r=80, t=100, b=100),  # Increased margins for labels
+            margin=dict(l=80, r=80, t=150, b=100),  # Increased top margin for title and subtitle
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=1.02,
+                y=0.98,  # Keep legend within 0-1 range
                 xanchor="center",
                 x=0.5,
                 bgcolor='rgba(255, 255, 255, 0.8)',
                 font=dict(size=10)
             ),
-            uniformtext=dict(mode='hide', minsize=8),  # Hide labels that would overlap
+            uniformtext=dict(mode='hide', minsize=8),
             showlegend=True,
         )
-        
+
+        # Add subtitle for current settings
+        fig.add_annotation(
+            text=f"IT Budget: {new_it_percentage}% of Revenue | Security Budget: {new_security_percentage}% of IT Budget",
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.95,  # Keep subtitle within 0-1 range
+            showarrow=False,
+            font=dict(size=12),
+            yshift=0
+        )
+
         # Configure axis formatting with better spacing and consistent grid
         fig.update_xaxes(
             showgrid=True,
@@ -690,109 +786,37 @@ with tab1:
         - Drag to zoom, double-click to reset
         """)
 
-        # Add detailed budget table with enhanced description
-        st.subheader("Detailed Budget Breakdown")
-        st.markdown("""
-        This table provides a detailed view of budgets at different revenue points based on your selected percentages.
-        All values are calculated using:
-        - Your selected IT budget percentage
-        - Your selected security budget percentage
-        - Revenue points from $50M to your maximum chart revenue
-        """)
+        st.divider()
+
+        # Add budget table
+        st.subheader("Budget Breakdown Table")
         
-        # Create a DataFrame with the calculations
+        # Create table data
         table_data = []
         for rev in revenue_array:
-            # Skip zero or empty values
-            if rev <= 0:
-                continue
-                
-            it_budget = rev * (st.session_state.it_percentage / 100)
-            security_budget = it_budget * (st.session_state.security_percentage / 100)
+            it_budget = rev * (new_it_percentage / 100)
+            security_budget = it_budget * (new_security_percentage / 100)
             
-            # Format numbers for display
-            rev_formatted = f"${rev:,.0f}M"
-            it_budget_formatted = f"${it_budget:,.2f}M"
-            security_budget_formatted = f"${security_budget:,.2f}M"
+            # Format numbers for table
+            rev_fmt = f"${rev:,.0f}M"
+            it_fmt = f"${it_budget:,.2f}M"
+            sec_fmt = f"${security_budget:,.2f}M"
             
             table_data.append({
-                "Annual Revenue": rev_formatted,
-                "IT Budget": it_budget_formatted,
-                "Security Budget": security_budget_formatted
+                "Annual Revenue": rev_fmt,
+                "IT Budget": it_fmt,
+                f"Security Budget ({new_security_percentage}% of IT)": sec_fmt
             })
         
-        # Convert to DataFrame and sort by Annual Revenue (removing the $ and M for proper sorting)
+        # Convert to DataFrame and display
         df = pd.DataFrame(table_data)
-        
-        # Create a helper column for sorting
-        df['sort_helper'] = df['Annual Revenue'].apply(lambda x: float(x.replace('$', '').replace('M', '').replace(',', '')))
-        df = df.sort_values('sort_helper')
-        df = df.drop('sort_helper', axis=1)  # Remove helper column
-        
-        # Display the sorted DataFrame
         st.dataframe(
             df,
             hide_index=True,
-            use_container_width=True,
-            height=min(400, len(table_data) * 35 + 40)  # Adjust height based on number of rows
+            use_container_width=True
         )
-        
-        # Update the table guide to match the new order
-        st.markdown("""
-        💡 **Table Guide**:
-        - **Annual Revenue**: Company's yearly revenue in millions
-        - **IT Budget**: Calculated IT spend based on selected percentage
-        - **Security Budget**: Security allocation from IT budget
-        """)
 
-    # Second column - Industry Context with enhanced description
-    with main_col2:
-        st.subheader("Industry Context")
-        st.markdown("""
-        This section shows how your selected budget percentages compare to industry standards.
-        Use this information to benchmark your budget allocations against industry peers.
-        """)
-        
-        # Add contextual information with enhanced formatting
-        if selected_industry != "Custom":
-            st.markdown(f"""
-            ### {selected_industry}
-            
-            #### Industry Research Benchmarks
-            - **IT Budget Range**: {min_it_percentage}% to {max_it_percentage}% of revenue
-                - Typical for {selected_industry}
-                - Based on industry research
-            
-            - **Security Budget Range**: {min_security_percentage}% to {max_security_percentage}% of IT budget
-                - Typical for {selected_industry}
-                - Based on security maturity level
-            
-            #### Your Current Settings
-            - IT Budget: **{st.session_state.it_percentage:.1f}%** of revenue
-                - {" Above" if st.session_state.it_percentage > typical_it_percentage else " Below"} industry typical ({typical_it_percentage}%)
-            
-            - Security Budget: **{st.session_state.security_percentage:.1f}%** of IT budget
-                - {" Above" if st.session_state.security_percentage > typical_security_percentage else " Below"} industry typical ({typical_security_percentage}%)
-            """)
-        else:
-            st.markdown(f"""
-            ### Custom Budget Settings
-            
-            You have selected custom budget percentages outside of predefined industry ranges.
-            Consider these factors when setting custom budgets:
-            - Business objectives
-            - Risk tolerance
-            - Regulatory requirements
-            - Technology dependencies
-            
-            #### Your Settings
-            - IT Budget: **{st.session_state.it_percentage:.1f}%** of revenue
-            - Security Budget: **{st.session_state.security_percentage:.1f}%** of IT budget
-            
-            {"#### Custom Ranges" if show_ranges else ""}
-            {f"- IT Budget: **{min_it_percentage}% to {max_it_percentage}%**" if show_ranges else ""}
-            {f"- Security Budget: **{min_security_percentage}% to {max_security_percentage}%**" if show_ranges else ""}
-            """)
+        st.divider()
 
     # Add spacer and Cyberfuturists link at the bottom
     st.markdown("""
