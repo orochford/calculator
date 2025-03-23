@@ -251,47 +251,8 @@ with tab1:
         if selected_industry == "Custom":
             st.markdown("""
             #### Custom Budget Settings
-            Set your own budget percentages based on your organization's needs.
+            Set your own budget ranges for scenario planning.
             """)
-            
-            custom_it_help = """
-            Set your custom IT budget percentage.
-            Consider:
-            - Digital transformation needs
-            - Technology dependencies
-            - Operational requirements
-            - Industry competition
-            """
-            new_it_value = float(st.session_state.it_percentage)
-            st.session_state.it_percentage = st.slider(
-                "IT Budget (% of Revenue)",
-                min_value=1.0,
-                max_value=20.0,
-                value=new_it_value,
-                step=0.1,
-                key="sidebar_it_slider",
-                help=custom_it_help
-            )
-            
-            custom_security_help = """
-            Set your custom security budget percentage.
-            Consider:
-            - Threat landscape
-            - Compliance requirements
-            - Data sensitivity
-            - Risk appetite
-            - Security maturity
-            """
-            new_security_value = float(st.session_state.security_percentage)
-            st.session_state.security_percentage = st.slider(
-                "Security Budget (% of IT Budget)",
-                min_value=1.0,
-                max_value=25.0,
-                value=new_security_value,
-                step=0.1,
-                key="sidebar_security_slider",
-                help=custom_security_help
-            )
             
             # Option to show ranges with help text
             ranges_help = """
