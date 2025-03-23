@@ -458,6 +458,31 @@ with tab1:
                 min_security_percentage = 5
                 max_security_percentage = 15
 
+        # Add variable IT budget percentage for reference tables/charts
+        st.subheader("Reference Chart Settings")
+        reference_it_percentage = st.slider(
+            "Reference IT Budget (% of Revenue)", 
+            min_value=1, 
+            max_value=15, 
+            value=5, 
+            step=1,
+            help="IT budget percentage used in reference chart and tables (default 5%)"
+        )
+
+        # Add custom trend line option
+        custom_trend = st.checkbox("Add Custom Trend Line", value=False)
+        if custom_trend:
+            custom_security_percentage = st.slider(
+                "Custom Security Budget (% of IT Budget)",
+                min_value=1,
+                max_value=30,
+                value=12,
+                step=1,
+                help="Create your own trend line with a custom security budget percentage"
+            )
+            custom_line_name = st.text_input("Custom Line Name", value="My Trend", 
+                                           help="Give your custom trend line a name")
+
 # Revenue Range
         st.subheader("Revenue Settings")
         # Define revenue steps with billions formatting for display
@@ -480,6 +505,7 @@ with tab1:
             'industry': selected_industry,
             'it_budget': it_budget_percentage,
             'security_budget': security_budget_percentage,
+            'reference_it': reference_it_percentage,
             'show_range': show_range,
             'min_it': min_it_percentage if show_range else 0,
             'max_it': max_it_percentage if show_range else 0,
@@ -492,6 +518,7 @@ with tab1:
         st.session_state.prev_selection['industry'] != selected_industry or
         st.session_state.prev_selection['it_budget'] != it_budget_percentage or
         st.session_state.prev_selection['security_budget'] != security_budget_percentage or
+        st.session_state.prev_selection['reference_it'] != reference_it_percentage or
         st.session_state.prev_selection['show_range'] != show_range or
         (show_range and st.session_state.prev_selection['min_it'] != min_it_percentage) or
         (show_range and st.session_state.prev_selection['max_it'] != max_it_percentage) or
@@ -504,6 +531,7 @@ with tab1:
         'industry': selected_industry,
         'it_budget': it_budget_percentage,
         'security_budget': security_budget_percentage,
+        'reference_it': reference_it_percentage,
         'show_range': show_range,
         'min_it': min_it_percentage if show_range else 0,
         'max_it': max_it_percentage if show_range else 0,
@@ -631,19 +659,38 @@ with tab1:
         # Interactive Chart
         st.subheader("Security Budget Chart")
 
-        # Create the reference dataframe similar to the image
-        revenue_tiers = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+        # Create the reference dataframe with dynamic revenue tiers based on selected revenue
+        # Generate revenue steps based on selected_revenue
+        max_revenue = selected_revenue
+        step_size = max(50, max_revenue // 10)  # Ensure at least 10 steps or minimum step of 50M
+        
+        revenue_tiers = []
+        current = 0
+        while current <= max_revenue:
+            revenue_tiers.append(current)
+            current += step_size
+            
+        # Ensure we include the max revenue exactly
+        if max_revenue not in revenue_tiers:
+            revenue_tiers.append(max_revenue)
+            
+        # Add standard revenue points for comparison
+        for std_point in [50, 100, 200, 500, 1000]:
+            if std_point <= max_revenue and std_point not in revenue_tiers:
+                revenue_tiers.append(std_point)
+                
+        revenue_tiers.sort()
         security_percentages = [5, 10, 15, 20]
         
         # Define chart revenues to use in the table later
-        chart_revenues = [50, 100, 200, 300, 400, 500]
+        chart_revenues = [50, 100, 200, 300, 400, 500, 750, 1000]
         chart_revenues = [r for r in chart_revenues if r <= selected_revenue]
         
         reference_data = []
         for rev in revenue_tiers:
             row_data = {"Annual Revenue (Million $)": rev}
-            # Assume IT budget is 5% of revenue as a reasonable default
-            it_budget = rev * 0.05  # 5% of revenue
+            # Use the variable IT budget percentage instead of hardcoded 5%
+            it_budget = rev * (reference_it_percentage / 100)
             
             for sec_pct in security_percentages:
                 sec_budget = it_budget * (sec_pct / 100)
@@ -656,7 +703,7 @@ with tab1:
         # Create reference chart similar to the image
         fig_ref = go.Figure()
         
-        # Add bars for each security percentage
+        # Add bars for each security percentage with improved width and spacing
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
         
         for i, sec_pct in enumerate(security_percentages):
@@ -664,27 +711,68 @@ with tab1:
                 name=f'Security Budget {sec_pct}%',
                 x=reference_df["Annual Revenue (Million $)"],
                 y=reference_df[f"Security Budget {sec_pct}%"],
-                marker_color=colors[i]
+                marker_color=colors[i],
+                width=step_size * 0.15,  # Adjust bar width based on step size
+                text=reference_df[f"Security Budget {sec_pct}%"].apply(lambda x: f"${x:.1f}M" if x < 1000 else f"${x/1000:.1f}B"),
+                textposition="outside",
+                textfont=dict(size=9),
+                showlegend=True
             ))
         
-        # Add trend lines
+        # Add trend lines: Lower, Typical, Upper
+        fig_ref.add_trace(go.Scatter(
+            name='Lower',
+            x=reference_df["Annual Revenue (Million $)"],
+            y=reference_df["Security Budget 5%"],
+            mode='lines+text',
+            line=dict(color='#1f77b4', width=1.5, dash='dot'),
+            marker=dict(size=5),
+            text=["Lower" if i == len(reference_df)//4 else "" for i in range(len(reference_df))],
+            textposition="top center",
+            textfont=dict(size=10, color='#1f77b4')
+        ))
+        
         fig_ref.add_trace(go.Scatter(
             name='Typical',
             x=reference_df["Annual Revenue (Million $)"],
             y=reference_df["Security Budget 10%"],
-            mode='lines+markers',
+            mode='lines+markers+text',
             line=dict(color='#ff7f0e', width=2, dash='dot'),
-            marker=dict(size=6)
+            marker=dict(size=6),
+            text=["Typical" if i == len(reference_df)//2 else "" for i in range(len(reference_df))],
+            textposition="top center",
+            textfont=dict(size=10, color='#ff7f0e')
         ))
         
         fig_ref.add_trace(go.Scatter(
             name='Upper',
             x=reference_df["Annual Revenue (Million $)"],
             y=reference_df["Security Budget 20%"],
-            mode='lines',
+            mode='lines+text',
             line=dict(color='#d62728', width=1.5, dash='dot'),
-            marker=dict(size=5)
+            marker=dict(size=5),
+            text=["Upper" if i == 3*len(reference_df)//4 else "" for i in range(len(reference_df))],
+            textposition="top center",
+            textfont=dict(size=10, color='#d62728')
         ))
+        
+        # Add custom trend line if enabled
+        if custom_trend:
+            # Calculate custom security budgets
+            reference_df[f"Custom Security Budget {custom_security_percentage}%"] = reference_df["Annual Revenue (Million $)"] * (reference_it_percentage / 100) * (custom_security_percentage / 100)
+            
+            # Add the custom trend line
+            fig_ref.add_trace(go.Scatter(
+                name=custom_line_name,
+                x=reference_df["Annual Revenue (Million $)"],
+                y=reference_df[f"Custom Security Budget {custom_security_percentage}%"],
+                mode='lines+text',
+                line=dict(color='#9467bd', width=2, dash='dash'),
+                marker=dict(size=7, symbol='star'),
+                text=[custom_line_name if i == len(reference_df)//3 else "" for i in range(len(reference_df))],
+                textposition="top center",
+                textfont=dict(size=10, color='#9467bd')
+            ))
         
         # Layout improvements
         fig_ref.update_layout(
@@ -693,17 +781,38 @@ with tab1:
             yaxis_title="Security Budget (Million $)",
             legend_title="Budget Percentages",
             barmode='group',
+            bargap=0.15,     # Gap between bars of adjacent location coordinates
+            bargroupgap=0.1, # Gap between bars of the same location coordinates
             height=500,
             font=dict(family="Arial, sans-serif", size=12),
             plot_bgcolor='rgba(240, 240, 240, 0.8)',
             margin=dict(l=20, r=20, t=50, b=20),
         )
         
+        # Add annotation for IT budget percentage
+        fig_ref.add_annotation(
+            text=f"IT Budget: {reference_it_percentage}% of Revenue",
+            xref="paper",
+            yref="paper",
+            x=0.01,
+            y=0.99,
+            showarrow=False,
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="rgba(0, 0, 0, 0.5)",
+            borderwidth=1,
+            borderpad=4,
+            font=dict(size=10)
+        )
+        
+        # Improve x-axis formatting - reduce number of ticks for clarity
         fig_ref.update_xaxes(
             tickprefix="$",
             ticksuffix="M",
             title_font=dict(size=14),
             tickfont=dict(size=12),
+            tickmode='array',
+            tickvals=[0, 200, 400, 600, 800, 1000],  # Show fewer, more meaningful ticks
+            ticktext=["$0", "$200M", "$400M", "$600M", "$800M", "$1000M"]
         )
         
         fig_ref.update_yaxes(
@@ -719,15 +828,20 @@ with tab1:
         # Add a data table below the chart
         st.subheader("Security Budget Table")
         
-        # Create data for table
+        # Create data for table using the reference IT percentage
         table_data = []
         for rev in chart_revenues:
             row = {"Annual Revenue": f"${rev}M"}
-            it_budget = rev * it_budget_percentage_decimal
+            it_budget = rev * (reference_it_percentage / 100)  # Use variable IT percentage
             
             for sec_pct in security_percentages:
                 sec_budget = it_budget * (sec_pct/100)
                 row[f"Security Budget {sec_pct}%"] = f"${sec_budget:.2f}M"
+            
+            # Add custom value to table if enabled
+            if custom_trend:
+                custom_budget = it_budget * (custom_security_percentage/100)
+                row[f"{custom_line_name} ({custom_security_percentage}%)"] = f"${custom_budget:.2f}M"
                 
             table_data.append(row)
         
@@ -735,29 +849,37 @@ with tab1:
         st.table(table_data)
 
 with st.expander("📊 View Reference Table", expanded=False):
-    st.markdown("""
-    This reference table shows security budgets across different revenue tiers and security spend percentages:
+    st.markdown(f"""
+    This reference table shows security budgets across different revenue tiers and security spend percentages 
+    (based on {reference_it_percentage}% IT budget):
     """)
     
     # Create formatted table
-    formatted_table = reference_df.style.format({
+    format_dict = {
         "Annual Revenue (Million $)": "${:.0f}M",
         "Security Budget 5%": "${:.3f}M",
         "Security Budget 10%": "${:.3f}M",
         "Security Budget 15%": "${:.3f}M",
         "Security Budget 20%": "${:.3f}M",
-    })
+    }
+    
+    # Add custom column to formatting if enabled
+    if custom_trend:
+        format_dict[f"Custom Security Budget {custom_security_percentage}%"] = "${:.3f}M"
+    
+    formatted_table = reference_df.style.format(format_dict)
     
     st.dataframe(formatted_table, use_container_width=True)
     
-    st.markdown("""
+    st.markdown(f"""
     - **Security Budget 5%**: Represents 5% of IT Budget allocation to Security
     - **Security Budget 10%**: Industry average for security spending (10% of IT Budget)
     - **Security Budget 15%**: Higher security allocation for regulated industries
     - **Security Budget 20%**: Highest security allocation for high-risk industries
+    {f"- **{custom_line_name} ({custom_security_percentage}%)**: Your custom trend line" if custom_trend else ""}
     
     Assumptions:
-    - IT Budget is calculated as 5% of Annual Revenue
+    - IT Budget is calculated as {reference_it_percentage}% of Annual Revenue
     - Security Budget is calculated as a percentage of IT Budget
     """)
 
