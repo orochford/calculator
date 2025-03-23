@@ -36,11 +36,29 @@ st.markdown("""
     .plotly-graph-div text {
         font-weight: bold !important;
     }
+
+    /* Custom styling for the cyberfuturists link */
+    .cyberfuturists-link {
+        background-color: #1E1E1E;
+        padding: 15px 25px;
+        border-radius: 8px;
+        color: #ffffff !important;
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-block;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+    }
+    .cyberfuturists-link:hover {
+        background-color: #2E2E2E;
+        transform: translateY(-2px);
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Define industry-specific IT budget percentages based on updated industry data
 INDUSTRY_IT_SPEND = {
+    "Weighted Average": {"min": 4, "max": 7, "typical": 5.5},
     "Financial Services": {"min": 7, "max": 11, "typical": 9.0},
     "Healthcare": {"min": 4, "max": 6, "typical": 5.0},
     "Retail": {"min": 2, "max": 4, "typical": 3.0},
@@ -50,12 +68,12 @@ INDUSTRY_IT_SPEND = {
     "Education": {"min": 3, "max": 6, "typical": 4.5},
     "Energy & Utilities": {"min": 3, "max": 5, "typical": 4.0},
     "Transportation & Logistics": {"min": 2, "max": 5, "typical": 3.5},
-    "Weighted Average": {"min": 4, "max": 7, "typical": 5.5},
     "Custom": None  # For user-defined values
 }
 
 # Define industry-specific security budget percentages (as % of IT spend)
 INDUSTRY_SECURITY_SPEND = {
+    "Weighted Average": {"min": 7, "max": 12, "typical": 9.5},
     "Financial Services": {"min": 10, "max": 15, "typical": 12.5},
     "Healthcare": {"min": 7, "max": 10, "typical": 8.5},
     "Retail": {"min": 5, "max": 8, "typical": 6.5},
@@ -65,7 +83,6 @@ INDUSTRY_SECURITY_SPEND = {
     "Education": {"min": 5, "max": 8, "typical": 6.5},
     "Energy & Utilities": {"min": 6, "max": 10, "typical": 8.0},
     "Transportation & Logistics": {"min": 5, "max": 8, "typical": 6.5},
-    "Weighted Average": {"min": 7, "max": 12, "typical": 9.5},
     "Custom": None  # For user-defined values
 }
 
@@ -154,11 +171,35 @@ industry_presets = {
 }
 
 # Title and description
+
+
+# Add dark theme container for logo
+st.markdown("""
+<style>
+.logo-container {
+    background-color: #1E1E1E;
+    padding: 40px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    text-align: center;
+    width: 100%;
+}
+.logo-container img {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    margin: 0 auto;
+}
+</style>
+<div class="logo-container">
+    <img src="https://img1.wsimg.com/isteam/ip/fc53e870-07e8-482a-a411-787d4ae0464d/Cyber%20Futurists%20LinkedIn%20Career%20Page%20Banner%20(1.png/:/rs=w:984,h:167" alt="Cyberfuturists Logo">
+</div>
+""", unsafe_allow_html=True)
 st.title('Security Budget Calculator')
 st.markdown('''
 This app calculates your expected IT and Security budgets based on annual revenue, IT budget percentage, and security budget percentage.
 
-Inspired by Oliver Rochford's analysis: "Why you are probably pricing your security solution all wrong."
+Inspired by [Oliver Rochford's](https://www.linkedin.com/in/oliver-rochford/) analysis: "[Why you are probably pricing your security solution all wrong](https://www.linkedin.com/pulse/why-you-probably-pricing-your-security-solution-all-wrong-rochford/)."
 ''')
 
 # Create tabs for different views
@@ -171,10 +212,11 @@ with tab1:
         st.header("Calculator Settings")
         
         # Industry selection
-        selected_industry = st.selectbox(
+        selected_industry = st.radio(
             "Select Industry",
             options=list(industry_presets.keys()) + ["Custom"],
-            index=9  # Default to Weighted Average
+            index=9,  # Default to Weighted Average
+            key="industry_selector"
         )
         
         # Budget percentage settings
@@ -286,12 +328,12 @@ with tab1:
                 y=lower_security_budget,
                 mode='lines+text',
                 name=f"Lower Bound ({min_security_percentage}% of {min_it_percentage}% IT)",
-                line=dict(color='rgba(100, 100, 100, 0.7)', width=2, dash='dot'),
+                line=dict(color='rgba(255, 140, 0, 0.7)', width=2, dash='dot'),  # Orange color
                 text=[f"${y:.2f}M" for y in lower_security_budget],
-                textposition='bottom center',
+                textposition='bottom right',
                 textfont=dict(
-                    color='rgba(100, 100, 100, 0.7)',
-                    size=11,
+                    color='rgba(255, 140, 0, 0.7)',
+                    size=10,
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
@@ -306,12 +348,12 @@ with tab1:
                 y=upper_security_budget,
                 mode='lines+text',
                 name=f"Upper Bound ({max_security_percentage}% of {max_it_percentage}% IT)",
-                line=dict(color='rgba(100, 100, 100, 0.7)', width=2, dash='dot'),
+                line=dict(color='rgba(255, 105, 180, 0.7)', width=2, dash='dot'),  # Hot pink color
                 text=[f"${y:.2f}M" for y in upper_security_budget],
-                textposition='top center',
+                textposition='top right',
                 textfont=dict(
-                    color='rgba(100, 100, 100, 0.7)',
-                    size=11,
+                    color='rgba(255, 105, 180, 0.7)',
+                    size=10,
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
@@ -331,11 +373,43 @@ with tab1:
                 textposition='middle right',
                 textfont=dict(
                     color='rgba(0, 0, 0, 0.8)',
-                    size=11,
+                    size=10,
                     family="Arial",
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
                             f"<b>Typical Security Budget ({typical_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
+                customdata=revenue_array
+            ))
+        
+        # Add custom trend line if enabled
+        custom_trend = st.checkbox("Add Custom Trend Line", value=False, key="custom_trend_checkbox")
+        if custom_trend:
+            custom_security_percentage = st.slider(
+                "Custom Security Budget (%)",
+                min_value=1,
+                max_value=30,
+                value=12,
+                step=1,
+                key="custom_security_percentage_slider"
+            )
+            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget", key="custom_line_name_input")
+            custom_security_budget = revenue_array * (it_percentage / 100) * (custom_security_percentage / 100)
+            fig.add_trace(go.Scatter(
+                x=x_positions,  # Use x_positions for consistency
+                y=custom_security_budget,
+                mode='lines+markers+text',
+                name=custom_line_name,
+                line=dict(color='rgba(128, 0, 128, 1)', width=4, dash='dot'),
+                marker=dict(size=8, symbol='circle', color='rgba(128, 0, 128, 1)'),
+                text=[f"${y:.2f}M" for y in custom_security_budget],
+                textposition='top center',
+                textfont=dict(
+                    color='rgba(128, 0, 128, 1)',
+                    size=11,
+                    family="Arial",
+                ),
+                hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
+                            f"<b>Custom Security Budget ({custom_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
                 customdata=revenue_array
             ))
         
@@ -345,14 +419,14 @@ with tab1:
             xaxis_title="Annual Revenue (Million $)",
             yaxis_title="Security Budget (Million $)",
             barmode='group',
-            bargap=0.2,    # gap between grouped bars
-            bargroupgap=0.05,  # tighter grouping
+            bargap=0.15,    # Slightly reduced gap between grouped bars
+            bargroupgap=0.02,  # Tighter grouping
             height=700,  # Taller chart
             width=None,  # Allow auto-width
             autosize=True,
-            font=dict(family="Arial", size=12),
+            font=dict(family="Arial", size=11),
             plot_bgcolor='white',
-            margin=dict(l=60, r=30, t=80, b=100),  # More bottom margin for labels
+            margin=dict(l=80, r=80, t=100, b=100),  # Increased margins for labels
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -360,8 +434,10 @@ with tab1:
                 xanchor="center",
                 x=0.5,
                 bgcolor='rgba(255, 255, 255, 0.8)',
+                font=dict(size=10)
             ),
-            uniformtext=dict(mode='show', minsize=10),  # Show all text labels with minimum size
+            uniformtext=dict(mode='hide', minsize=8),  # Hide labels that would overlap
+            showlegend=True,
         )
         
         # Configure axis formatting with better spacing and consistent grid
@@ -371,9 +447,10 @@ with tab1:
             tickmode='array',
             tickvals=x_positions,
             ticktext=[f"${rev}M" for rev in revenue_array],
-            tickangle=0,  # Horizontal labels
-            tickfont=dict(size=11),
-            minor_showgrid=False
+            tickangle=45,  # Angled labels to prevent overlap
+            tickfont=dict(size=10),
+            minor_showgrid=False,
+            dtick=1,  # Force spacing between ticks
         )
         
         fig.update_yaxes(
@@ -382,8 +459,9 @@ with tab1:
             tickprefix='$',
             ticksuffix='M',
             rangemode='tozero',
-            tickfont=dict(size=11),
-            minor_showgrid=False
+            tickfont=dict(size=10),
+            minor_showgrid=False,
+            dtick='auto',  # Automatic tick spacing
         )
         
         # Display the chart with full-width and enhanced configuration
@@ -440,18 +518,6 @@ with tab1:
         if security_percentage_main != security_percentage:
             security_percentage = security_percentage_main
         
-        # Custom trend line option
-        custom_trend = st.checkbox("Add Custom Trend Line", value=False)
-        if custom_trend:
-            custom_security_percentage = st.slider(
-                "Custom Security Budget (%)",
-                min_value=1,
-                max_value=30,
-                value=12,
-                step=1
-            )
-            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget")
-        
         # Format the annual revenue with M/B suffix
         annual_revenue_formatted = f"${annual_revenue:,.2f}M" if annual_revenue < 1000 else f"${annual_revenue/1000:,.2f}B"
         
@@ -491,6 +557,16 @@ with tab1:
             
             {f"- Custom Budget Range: **{min_it_percentage}% to {max_it_percentage}%** IT, **{min_security_percentage}% to {max_security_percentage}%** Security" if show_ranges else ""}
             """)
+
+    # Add spacer and Cyberfuturists link at the bottom
+    st.markdown("""
+    <br><br>
+    <div style='text-align: center; padding: 20px 0;'>
+        <a href='https://cyberfuturists.com' target='_blank' class='cyberfuturists-link'>
+            Visit The Cyberfuturists →
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Tab 2: Industry Benchmarks
 with tab2:
