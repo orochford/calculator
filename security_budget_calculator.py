@@ -219,15 +219,6 @@ with tab1:
             max_security_percentage = preset["security_max"]
             typical_security_percentage = preset["security_typical"]
         
-        # Revenue settings
-        annual_revenue = st.number_input(
-            "Annual Revenue (Million $)",
-            min_value=1,
-            max_value=10000,
-            value=100,
-            step=50
-        )
-        
         # Revenue array for the chart
         max_chart_revenue = st.slider(
             "Max Revenue in Chart (Million $)",
@@ -243,18 +234,6 @@ with tab1:
         if 50 not in revenue_array and max_chart_revenue >= 50:
             revenue_array = np.sort(np.append(revenue_array, [50]))
         
-        # Custom trend line option
-        custom_trend = st.checkbox("Add Custom Trend Line", value=False)
-        if custom_trend:
-            custom_security_percentage = st.slider(
-                "Custom Security Budget (%)",
-                min_value=1,
-                max_value=30,
-                value=12,
-                step=1
-            )
-            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget")
-    
     st.header("Interactive Security Budget Calculator")
     
     # Layout for main content
@@ -295,28 +274,6 @@ with tab1:
                 ),
                 hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
                             f"<b>Security Budget ({percent}%):</b> $%{{y:.2f}}M<extra></extra>",
-                customdata=revenue_array
-            ))
-        
-        # Add custom trend line if enabled
-        if custom_trend:
-            custom_security_budget = revenue_array * (it_percentage / 100) * (custom_security_percentage / 100)
-            fig.add_trace(go.Scatter(
-                x=x_positions,  # Use x_positions for consistency
-                y=custom_security_budget,
-                mode='lines+markers+text',
-                name=custom_line_name,
-                line=dict(color='rgba(128, 0, 128, 1)', width=4, dash='dot'),
-                marker=dict(size=8, symbol='circle', color='rgba(128, 0, 128, 1)'),
-                text=[f"${y:.2f}M" for y in custom_security_budget],
-                textposition='top center',
-                textfont=dict(
-                    color='rgba(128, 0, 128, 1)',
-                    size=11,
-                    family="Arial",
-                ),
-                hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                            f"<b>Custom Security Budget ({custom_security_percentage}%):</b> $%{{y:.2f}}M<extra></extra>",
                 customdata=revenue_array
             ))
         
@@ -449,9 +406,18 @@ with tab1:
     with main_col2:
         st.subheader("Budget Summary")
         
+        # Annual Revenue input
+        annual_revenue = st.number_input(
+            "Annual Revenue (Million $)",
+            min_value=1,
+            max_value=10000,
+            value=100,
+            step=50
+        )
+        
         # Add more prominent IT budget slider
         it_percentage_main = st.slider(
-            "IT Budget (% of Revenue)",
+            "IT Budget (% of Revenue)", 
             min_value=1.0,
             max_value=20.0,
             value=float(it_percentage),
@@ -463,7 +429,7 @@ with tab1:
             it_percentage = it_percentage_main
         
         security_percentage_main = st.slider(
-            "Security Budget (% of IT Budget)",
+            "Security Budget (% of IT Budget)", 
             min_value=1.0,
             max_value=25.0,
             value=float(security_percentage),
@@ -473,6 +439,18 @@ with tab1:
         # Update the security percentage if changed from this slider
         if security_percentage_main != security_percentage:
             security_percentage = security_percentage_main
+        
+        # Custom trend line option
+        custom_trend = st.checkbox("Add Custom Trend Line", value=False)
+        if custom_trend:
+            custom_security_percentage = st.slider(
+                "Custom Security Budget (%)",
+                min_value=1,
+                max_value=30,
+                value=12,
+                step=1
+            )
+            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget")
         
         # Format the annual revenue with M/B suffix
         annual_revenue_formatted = f"${annual_revenue:,.2f}M" if annual_revenue < 1000 else f"${annual_revenue/1000:,.2f}B"
