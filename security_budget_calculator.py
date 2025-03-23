@@ -451,26 +451,95 @@ with tab1:
         it_budget_formatted = f"${it_budget:,.2f}M" if it_budget < 1000 else f"${it_budget/1000:,.2f}B"
         security_budget_formatted = f"${security_budget:,.2f}M" if security_budget < 1000 else f"${security_budget/1000:,.2f}B"
 
-        # Display metrics
-        st.metric("Annual Revenue", annual_revenue_formatted)
-        st.metric("IT Budget", it_budget_formatted, f"{new_it_percentage}% of Revenue")
-        st.metric("Security Budget", security_budget_formatted, f"{new_security_percentage}% of IT Budget")
+        # Display metrics in a more compact way
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Annual Revenue", annual_revenue_formatted)
+        with col2:
+            st.metric("IT Budget", it_budget_formatted, f"{new_it_percentage}% of Revenue")
+        with col3:
+            st.metric("Security Budget", security_budget_formatted, f"{new_security_percentage}% of IT Budget")
 
         st.divider()
 
-        # Add custom trend line control
-        st.subheader("Additional Controls")
-        custom_trend = st.checkbox("Add Custom Trend Line", value=False, key="custom_trend_checkbox")
-        if custom_trend:
-            custom_security_percentage = st.slider(
-                "Custom Security Budget (%)",
-                min_value=1,
-                max_value=30,
-                value=12,
-                step=1,
-                key="custom_security_percentage_slider"
-            )
-            custom_line_name = st.text_input("Custom Line Name", value="My Custom Budget", key="custom_line_name_input")
+        # Initialize custom trend variables
+        custom_trend = False
+        custom_security_percentage = 0
+        custom_line_name = ""
+
+        # Create donut chart
+        donut_fig = go.Figure()
+
+        # Calculate budget values
+        it_budget = annual_revenue * (new_it_percentage / 100)
+        security_budget = it_budget * (new_security_percentage / 100)
+        non_it_budget = annual_revenue - it_budget
+        non_security_it = it_budget - security_budget
+
+        # Add donut trace
+        donut_fig.add_trace(go.Pie(
+            values=[security_budget, non_security_it, non_it_budget],
+            labels=['Security Budget', 'Other IT Budget', 'Non-IT Budget'],
+            hole=0.6,
+            marker_colors=['#96E4B0', '#008581', 'rgba(200, 200, 200, 0.7)'],  # Mint green, Teal, Light gray
+            textinfo='label+percent',
+            hovertemplate="<b>%{label}</b><br>" +
+                        "$%{value:.2f}M<br>" +
+                        "%{percent}<extra></extra>",
+            textfont=dict(size=14),
+            insidetextorientation='horizontal'
+        ))
+
+        # Update layout
+        donut_fig.update_layout(
+            title={
+                'text': "Budget Breakdown",
+                'x': 0.5,
+                'y': 0.95,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': dict(size=16)
+            },
+            height=500,
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.2,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=12)
+            ),
+            annotations=[
+                dict(
+                    text=f"Total Revenue<br>${annual_revenue:.2f}M",
+                    x=0.5,
+                    y=0.5,
+                    font=dict(size=14),
+                    showarrow=False
+                ),
+                dict(
+                    text=f"IT: {new_it_percentage}% of Revenue<br>Security: {new_security_percentage}% of IT",
+                    x=0.5,
+                    y=0.4,
+                    font=dict(size=12),
+                    showarrow=False
+                )
+            ]
+        )
+
+        # Display the donut chart
+        st.plotly_chart(donut_fig, use_container_width=True)
+
+        # Add explanation of the chart
+        st.markdown("""
+        **Understanding the Budget Breakdown:**
+        - The outer ring shows how your total revenue is divided
+        - Green section: Security budget (% of IT budget)
+        - Teal section: Other IT spending
+        - Gray section: Non-IT budget
+        - Hover over sections to see detailed values
+        """)
 
         st.divider()
 
