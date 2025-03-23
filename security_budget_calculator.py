@@ -17,6 +17,9 @@ if 'it_percentage' not in st.session_state:
     st.session_state.it_percentage = 5.5
 if 'security_percentage' not in st.session_state:
     st.session_state.security_percentage = 9.5
+# Initialize session state for custom industries
+if 'custom_industries' not in st.session_state:
+    st.session_state.custom_industries = {}
 
 # Configure plotly to use a higher renderer
 pio.templates.default = "plotly_white"
@@ -900,11 +903,24 @@ with tab2:
     
     # Display industry benchmarks
     st.subheader("IT Budget as Percentage of Revenue")
+    
+    # Combine standard and custom industries for charts
+    all_industries = {**industry_presets}
+    for name, data in st.session_state.custom_industries.items():
+        all_industries[name] = {
+            "it_min": data["it_min"],
+            "it_typical": data["it_typical"],
+            "it_max": data["it_max"],
+            "security_min": data["security_min"],
+            "security_typical": data["security_typical"],
+            "security_max": data["security_max"]
+        }
+    
     industry_it_chart_data = pd.DataFrame({
-        'Industry': list(industry_presets.keys()),
-        'Min IT %': [industry_presets[ind]['it_min'] for ind in industry_presets],
-        'Typical IT %': [industry_presets[ind]['it_typical'] for ind in industry_presets],
-        'Max IT %': [industry_presets[ind]['it_max'] for ind in industry_presets],
+        'Industry': list(all_industries.keys()),
+        'Min IT %': [all_industries[ind]['it_min'] for ind in all_industries],
+        'Typical IT %': [all_industries[ind]['it_typical'] for ind in all_industries],
+        'Max IT %': [all_industries[ind]['it_max'] for ind in all_industries],
     })
     
     # Create horizontal bar chart for IT budget percentages
@@ -972,10 +988,10 @@ with tab2:
     # Create a similar chart for security budget percentages
     st.subheader("Security Budget as Percentage of IT Spend")
     industry_sec_chart_data = pd.DataFrame({
-        'Industry': list(industry_presets.keys()),
-        'Min Security %': [industry_presets[ind]['security_min'] for ind in industry_presets],
-        'Typical Security %': [industry_presets[ind]['security_typical'] for ind in industry_presets],
-        'Max Security %': [industry_presets[ind]['security_max'] for ind in industry_presets],
+        'Industry': list(all_industries.keys()),  # Use all_industries instead of industry_presets
+        'Min Security %': [all_industries[ind]['security_min'] for ind in all_industries],
+        'Typical Security %': [all_industries[ind]['security_typical'] for ind in all_industries],
+        'Max Security %': [all_industries[ind]['security_max'] for ind in all_industries],
     })
     
     # Create horizontal bar chart for security budget percentages
@@ -1065,6 +1081,9 @@ with tab2:
         'Technology'
     ]
     
+    # Add custom industries to the list
+    industries.extend(list(st.session_state.custom_industries.keys()))
+    
     for industry in industries:
         base_industry = industry
         if industry == 'Transportation':
@@ -1078,7 +1097,16 @@ with tab2:
         elif industry == 'Financial':
             base_industry = 'Financial Services'
             
-        if base_industry in industry_presets:
+        # Check if it's a custom industry
+        if industry in st.session_state.custom_industries:
+            custom_data = st.session_state.custom_industries[industry]
+            bubble_data.append({
+                'Industry': industry,
+                'Full Industry': industry,
+                'IT Budget': custom_data['it_typical'],
+                'Security Budget': custom_data['security_typical']
+            })
+        elif base_industry in industry_presets:
             it_typical = industry_presets[base_industry]['it_typical']
             security_typical = industry_presets[base_industry]['security_typical']
             
@@ -1235,22 +1263,87 @@ with tab2:
     # Display industry benchmark reference table
     st.subheader("Industry Benchmark Reference Table")
     
-    st.markdown("""
-    | Industry | IT Budget (% of Revenue) | Security Budget (% of IT) |
-    |----------|--------------------------|---------------------------|
-    | Financial Services | 7-11% | 10-15% |
-    | Healthcare | 4-6% | 7-10% |
-    | Retail | 2-4% | 5-8% |
-    | Technology | 8-15% | 10-20% |
-    | Manufacturing | 2-4% | 5-10% |
-    | Government/Public Sector | 5-8% | 8-12% |
-    | Education | 3-6% | 5-8% |
-    | Energy & Utilities | 3-5% | 6-10% |
-    | Transportation & Logistics | 2-5% | 5-8% |
-    | Weighted Average | 4-7% | 7-12% |
+    # Create DataFrame for the table
+    table_data = []
     
-    *Source: Compiled from industry data from Gartner, IDC, Deloitte, Flexera*
-    """)
+    # Add standard industries
+    for industry in all_industries.keys():  # Use all_industries instead of industry_presets
+        if industry != "Custom":  # Skip the "Custom" placeholder
+            table_data.append({
+                'Industry': industry,
+                'IT Budget (% of Revenue)': f"{all_industries[industry]['it_min']}-{all_industries[industry]['it_max']}%",
+                'Security Budget (% of IT)': f"{all_industries[industry]['security_min']}-{all_industries[industry]['security_max']}%"
+            })
+    
+    # Create and display DataFrame
+    table_df = pd.DataFrame(table_data)
+    st.dataframe(
+        table_df,
+        hide_index=True,
+        use_container_width=True
+    )
+    
+    st.caption("*Source: Compiled from industry data from Gartner, IDC, Deloitte, Flexera and custom inputs*")
+    
+    # Move custom industry section to bottom as expandable
+    with st.expander("➕ Add Custom Industry"):
+        st.markdown("""
+        Add your own industry benchmarks to compare with standard industries.
+        Custom industries will be included in all charts and tables above.
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Form for adding custom industry
+            with st.form("add_custom_industry"):
+                st.markdown("##### Industry Information")
+                custom_industry_name = st.text_input("Industry Name", placeholder="Enter industry name")
+                
+                st.markdown("##### IT Budget (% of Revenue)")
+                it_min = st.number_input("Minimum IT %", 0.1, 30.0, 2.0, 0.1)
+                it_typical = st.number_input("Typical IT %", it_min, 30.0, (it_min + 2), 0.1)
+                it_max = st.number_input("Maximum IT %", it_typical, 30.0, (it_typical + 2), 0.1)
+                
+                st.markdown("##### Security Budget (% of IT)")
+                sec_min = st.number_input("Minimum Security %", 0.1, 40.0, 5.0, 0.1)
+                sec_typical = st.number_input("Typical Security %", sec_min, 40.0, (sec_min + 2), 0.1)
+                sec_max = st.number_input("Maximum Security %", sec_typical, 40.0, (sec_typical + 2), 0.1)
+                
+                submitted = st.form_submit_button("Add Industry")
+                
+                if submitted and custom_industry_name:
+                    # Add new industry to session state
+                    st.session_state.custom_industries[custom_industry_name] = {
+                        "it_min": it_min,
+                        "it_typical": it_typical,
+                        "it_max": it_max,
+                        "security_min": sec_min,
+                        "security_typical": sec_typical,
+                        "security_max": sec_max
+                    }
+                    st.success(f"Added custom industry: {custom_industry_name}")
+                    st.rerun()
+        
+        with col2:
+            # Display custom industries
+            if st.session_state.custom_industries:
+                st.markdown("##### Your Custom Industries")
+                for name, data in st.session_state.custom_industries.items():
+                    st.markdown(f"""
+                    **{name}**
+                    - IT Budget Range: {int(data['it_min'])}% - {int(data['it_max'])}%
+                    - Typical IT: {int(data['it_typical'])}%
+                    - Security Budget Range: {int(data['security_min'])}% - {int(data['security_max'])}%
+                    - Typical Security: {int(data['security_typical'])}%
+                    ---
+                    """)
+                
+                if st.button("Clear All Custom Industries"):
+                    st.session_state.custom_industries = {}
+                    st.rerun()
+            else:
+                st.info("No custom industries added yet. Use the form on the left to add your first industry.")
     
     # References and methodology
     with st.expander("Methodology and References", expanded=False):
