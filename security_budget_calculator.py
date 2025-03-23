@@ -572,6 +572,47 @@ with tab1:
         # Add helper text about chart sizing
         st.info("💡 **Tip**: Click the fullscreen button in the top-right corner of the chart or adjust your browser zoom for better viewing.")
 
+        # Add detailed budget table
+        st.subheader("Detailed Budget Breakdown")
+        
+        # Create a DataFrame with the calculations
+        table_data = []
+        for rev in revenue_array:
+            it_budget = rev * (st.session_state.it_percentage / 100)
+            security_budget = it_budget * (st.session_state.security_percentage / 100)
+            
+            # Format numbers for display
+            rev_formatted = f"${rev:,.0f}M"
+            it_budget_formatted = f"${it_budget:,.2f}M"
+            security_budget_formatted = f"${security_budget:,.2f}M"
+            
+            table_data.append({
+                "Annual Revenue": rev_formatted,
+                "IT Budget": it_budget_formatted,
+                f"Security Budget ({st.session_state.security_percentage}% of IT)": security_budget_formatted,
+                "IT % of Revenue": f"{st.session_state.it_percentage:.1f}%",
+                "Security % of IT": f"{st.session_state.security_percentage:.1f}%"
+            })
+        
+        # Convert to DataFrame and display
+        df = pd.DataFrame(table_data)
+        st.dataframe(
+            df,
+            hide_index=True,
+            use_container_width=True,
+            height=400
+        )
+        
+        # Add explanation of the table
+        st.markdown("""
+        💡 **Table Guide**:
+        - **Annual Revenue**: Company's yearly revenue in millions
+        - **IT Budget**: Calculated IT spend based on selected percentage
+        - **Security Budget**: Security allocation from IT budget
+        - **IT % of Revenue**: Selected IT budget percentage
+        - **Security % of IT**: Selected security budget percentage
+        """)
+
     # Add spacer and Cyberfuturists link at the bottom
     st.markdown("""
     <br><br>
