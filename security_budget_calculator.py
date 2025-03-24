@@ -631,7 +631,7 @@ with tab1:
             
             table_data.append({
                 "Annual Revenue": rev_fmt,
-                "IT Budget": it_fmt,
+                f"IT Budget ({current_it}% of Revenue)": it_fmt,
                 f"Security Budget ({current_security}% of IT)": sec_fmt
             })
         
@@ -642,6 +642,9 @@ with tab1:
             hide_index=True,
             use_container_width=True
         )
+        
+        # Add citation
+        st.caption("Source: [Security Budget Calculator](https://github.com/orochford/calculator/) (BSD License)")
 
     # Second column - Budget Controls and Analysis
     with main_col2:
