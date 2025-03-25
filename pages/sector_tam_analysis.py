@@ -8,6 +8,8 @@ def show():
     st.markdown("""
     This section analyzes the Total Addressable Market (TAM) for IT and Security budgets across different sectors.
     The analysis uses industry-standard budget percentages and revenue estimates to calculate potential market size.
+    
+    Data source: [NAICS Industry Search](https://www.naics.com/search/)
     """)
 
     # Define sector data

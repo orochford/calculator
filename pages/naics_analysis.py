@@ -53,6 +53,8 @@ def show():
     Select one or more NAICS codes to see how many potential customers exist in each revenue range.
     
     Note: The analysis includes 1,935,963 uncoded records which are shown in the total but excluded from revenue-based calculations.
+    
+    Data source: [NAICS Business Counts by Company Size](https://www.naics.com/business-lists/counts-by-company-size/)
     """)
 
     # Load NAICS data
