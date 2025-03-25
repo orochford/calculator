@@ -285,7 +285,7 @@ def show():
         st.dataframe(tier_df, use_container_width=True)
         
         # Create chart for visualization
-        st.subheader("Distribution of Companies by Revenue Tier")
+        st.subheader("Distribution of Companies and TAM by Revenue Tier")
         
         # Prepare data for chart
         chart_data = tier_df.copy()
@@ -302,123 +302,132 @@ def show():
             else float(x.replace("$", "").replace("B", "")) * 1000
         )
         
-        # Create a multi-dimensional chart with bubbles
+        # Create scatter plot with bubbles
         fig = go.Figure()
-        
-        # Add bar chart for number of companies
-        fig.add_trace(go.Bar(
-            x=chart_data["Revenue Tier"],
-            y=chart_data["Number of Companies"],
-            name="Number of Companies",
-            marker_color="rgba(60, 120, 216, 0.7)",
-            text=chart_data["Number of Companies"],
-            textposition="outside",
-        ))
-        
-        # Calculate positions for bubbles - place them above the bars
-        y_offset_factor = 0.2  # Offset as a fraction of company count
-        max_companies = chart_data["Number of Companies"].max()
-        
-        # Calculate better bubble sizes - adjust based on sqrt for more proportional appearance
+
+        # Calculate bubble sizes using sqrt scale for better visual representation
         max_it_tam = chart_data["IT Budget TAM Numeric"].max()
         max_sec_tam = chart_data["Security TAM Numeric"].max()
         
-        # Use logarithmic scaling for better visual representation with wide value ranges
         chart_data["IT Bubble Size"] = chart_data["IT Budget TAM Numeric"].apply(
-            lambda x: 25 + (35 * np.log1p(x) / np.log1p(max_it_tam)) if x > 0 else 10
+            lambda x: 40 + (60 * np.sqrt(x) / np.sqrt(max_it_tam)) if x > 0 else 20
         )
         chart_data["Security Bubble Size"] = chart_data["Security TAM Numeric"].apply(
-            lambda x: 20 + (25 * np.log1p(x) / np.log1p(max_sec_tam)) if x > 0 else 8
+            lambda x: 30 + (50 * np.sqrt(x) / np.sqrt(max_sec_tam)) if x > 0 else 15
         )
-        
-        # Add bubble chart for IT Budget TAM - positioned above bars
-        for i, row in chart_data.iterrows():
-            # Calculate y position for IT bubble (above the bar)
-            y_pos = row["Number of Companies"] * (1 + y_offset_factor)
-            
-            # Add IT TAM bubble
-            fig.add_trace(go.Scatter(
-                x=[row["Revenue Tier"]],
-                y=[y_pos],
-                mode="markers+text",
-                name="IT Budget TAM" if i == 0 else None,  # Only add to legend once
-                marker=dict(
-                    size=row["IT Bubble Size"],
-                    color="rgba(65, 171, 93, 0.7)",
-                    line=dict(width=1, color="rgba(65, 171, 93, 1)"),
-                    symbol="circle",
-                ),
-                text=row["IT Budget TAM ($M)"],
-                textposition="middle center",
-                textfont=dict(
-                    size=10,
-                    color="black"
-                ),
-                hovertemplate="<b>%{x}</b><br>Companies: " + str(row["Number of Companies"]) + "<br>IT TAM: " + row["IT Budget TAM ($M)"] + "<extra></extra>",
-                showlegend=i == 0  # Only show in legend once
-            ))
-            
-            # Calculate y position for Security bubble (above the IT bubble)
-            y_pos_sec = row["Number of Companies"] * (1 + y_offset_factor * 2)
-            
-            # Add Security TAM bubble
-            fig.add_trace(go.Scatter(
-                x=[row["Revenue Tier"]],
-                y=[y_pos_sec],
-                mode="markers+text",
-                name="Security TAM" if i == 0 else None,  # Only add to legend once
-                marker=dict(
-                    size=row["Security Bubble Size"],
-                    color="rgba(251, 180, 76, 0.7)",
-                    line=dict(width=1, color="rgba(251, 180, 76, 1)"),
-                    symbol="circle",
-                ),
-                text=row["Security TAM ($M)"],
-                textposition="middle center",
-                textfont=dict(
-                    size=9,
-                    color="black"
-                ),
-                hovertemplate="<b>%{x}</b><br>Companies: " + str(row["Number of Companies"]) + "<br>Security TAM: " + row["Security TAM ($M)"] + "<extra></extra>",
-                showlegend=i == 0  # Only show in legend once
-            ))
+
+        # Create y-axis positions for staggered layout
+        y_positions = np.arange(len(chart_data)) * 2  # Multiply by 2 for more spacing
+
+        # Add IT TAM bubbles
+        fig.add_trace(go.Scatter(
+            x=chart_data["Revenue Tier"],
+            y=y_positions,
+            mode="markers+text",
+            name="IT Budget TAM",
+            marker=dict(
+                size=chart_data["IT Bubble Size"],
+                color="rgba(65, 171, 93, 0.8)",
+                line=dict(width=2, color="rgba(65, 171, 93, 1)"),
+                symbol="circle",
+            ),
+            text=chart_data["IT Budget TAM ($M)"],
+            textposition="middle center",
+            textfont=dict(
+                size=11,
+                color="black",
+                family="Arial"
+            ),
+            hovertemplate="<b>%{x}</b><br>" +
+                         "IT TAM: %{text}<br>" +
+                         "Companies: %{customdata:,.0f}<extra></extra>",
+            customdata=chart_data["Number of Companies"]
+        ))
+
+        # Add Security TAM bubbles
+        fig.add_trace(go.Scatter(
+            x=chart_data["Revenue Tier"],
+            y=y_positions + 0.7,  # Offset for staggered appearance
+            mode="markers+text",
+            name="Security TAM",
+            marker=dict(
+                size=chart_data["Security Bubble Size"],
+                color="rgba(251, 180, 76, 0.8)",
+                line=dict(width=2, color="rgba(251, 180, 76, 1)"),
+                symbol="circle",
+            ),
+            text=chart_data["Security TAM ($M)"],
+            textposition="middle center",
+            textfont=dict(
+                size=10,
+                color="black",
+                family="Arial"
+            ),
+            hovertemplate="<b>%{x}</b><br>" +
+                         "Security TAM: %{text}<br>" +
+                         "Companies: %{customdata:,.0f}<extra></extra>",
+            customdata=chart_data["Number of Companies"]
+        ))
+
+        # Add company count as text
+        fig.add_trace(go.Scatter(
+            x=chart_data["Revenue Tier"],
+            y=y_positions + 0.35,  # Center between bubbles
+            mode="text",
+            text=chart_data["Number of Companies"].apply(lambda x: f"{x:,.0f} companies"),
+            textposition="middle right",
+            textfont=dict(
+                size=10,
+                color="rgba(0,0,0,0.6)",
+                family="Arial"
+            ),
+            showlegend=False,
+            hoverinfo="skip"
+        ))
         
         # Update layout for better readability
         fig.update_layout(
-            title="Multi-dimensional Analysis by Revenue Tier",
-            xaxis={"categoryorder": "array", "categoryarray": chart_data["Revenue Tier"].tolist()},
-            yaxis_title="Number of Companies",
-            xaxis_title="Revenue Range",
-            height=600,
+            title=dict(
+                text="TAM Analysis by Revenue Tier",
+                font=dict(size=16, family="Arial")
+            ),
+            xaxis=dict(
+                title="Revenue Range",
+                showgrid=True,
+                gridcolor="rgba(0,0,0,0.1)"
+            ),
+            yaxis=dict(
+                showticklabels=False,
+                showgrid=False,
+                zeroline=False
+            ),
+            height=700,
             font=dict(family="Arial, sans-serif", size=12),
-            plot_bgcolor='rgba(240, 240, 240, 0.8)',
+            plot_bgcolor="white",
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
                 y=1.02,
                 xanchor="right",
-                x=1
+                x=1,
+                font=dict(size=12)
             ),
-            margin=dict(t=80, b=80)
+            margin=dict(t=80, b=60, l=40, r=40)
         )
-        
-        # Set y-axis to accommodate the bubbles above bars
-        y_max = max_companies * (1 + y_offset_factor * 3)  # Extra space for bubbles and labels
-        fig.update_yaxes(range=[0, y_max])
-        
+
         # Add annotation explaining the bubbles
         fig.add_annotation(
-            text="Bubble size represents TAM value",
+            text="Bubble size represents relative TAM value",
             xref="paper",
             yref="paper",
             x=0.01,
             y=0.99,
             showarrow=False,
-            bgcolor="rgba(255, 255, 255, 0.8)",
+            bgcolor="rgba(255, 255, 255, 0.9)",
             bordercolor="rgba(0, 0, 0, 0.5)",
             borderwidth=1,
             borderpad=4,
-            font=dict(size=12)
+            font=dict(size=12, family="Arial")
         )
         
         st.plotly_chart(fig, use_container_width=True)

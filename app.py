@@ -16,6 +16,26 @@ initialize_session_state()
 # Configure plotly to use a higher renderer
 pio.templates.default = "plotly_white"
 
+# Hide sidebar navigation
+st.markdown("""
+<style>
+    /* Hide all navigation links in the sidebar */
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    
+    /* Remove extra padding at the top of sidebar */
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 2rem;
+    }
+    
+    /* Hide any remaining navigation elements */
+    div[data-testid="stSidebarNavItems"] {
+        display: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Apply custom CSS
 set_custom_css()
 
