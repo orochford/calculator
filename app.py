@@ -26,11 +26,26 @@ st.markdown("""
     
     /* Remove extra padding at the top of sidebar */
     section[data-testid="stSidebar"] .block-container {
-        padding-top: 2rem;
+        padding-top: 2rem !important;
     }
     
     /* Hide any remaining navigation elements */
     div[data-testid="stSidebarNavItems"] {
+        display: none !important;
+    }
+    
+    /* Hide the hamburger menu button */
+    button[kind="header"] {
+        display: none !important;
+    }
+    
+    /* Hide the default Streamlit header */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    /* Hide all main menu items */
+    .stApp header {
         display: none !important;
     }
 </style>

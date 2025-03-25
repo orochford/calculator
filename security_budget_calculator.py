@@ -57,92 +57,118 @@ NAICS_REVENUE_TIERS = {
 # Load NAICS Data
 @st.cache_data
 def load_naics_data():
-    # Load the correct sheet as specified by user
-    df = pd.read_excel("usbusinesses.xlsx", sheet_name="AnnualSales-Jan-2024")
-    
-    # Columns are specified by the user:
-    # - NAICS codes in column A
-    # - NAICS names in column B
-    # - Count of firms by revenue tier in columns C to L
-    # - Total count in column M
-    
-    # Rename columns based on position
-    columns = df.columns.tolist()
-    column_rename = {}
-    
-    # First two columns are NAICS Code and NAICS Name
-    if len(columns) >= 2:
-        column_rename[columns[0]] = "NAICS Code"
-        column_rename[columns[1]] = "NAICS Name"
-    
-    # Apply column renaming
-    df = df.rename(columns=column_rename)
-    
-    # Create revenue tier dataframes for each range
-    # Define the revenue ranges for each tier (columns C to L)
-    revenue_tiers = [
-        (0, 50),      # Column C: $0-50M
-        (50, 100),    # Column D: $50-100M 
-        (100, 250),   # Column E: $100-250M
-        (250, 500),   # Column F: $250-500M
-        (500, 1000),  # Column G: $500M-1B
-        (1000, 2500), # Column H: $1-2.5B
-        (2500, 5000), # Column I: $2.5-5B
-        (5000, 10000), # Column J: $5-10B
-        (10000, 50000), # Column K: $10-50B
-        (50000, 100000) # Column L: $50B+
-    ]
-    
-    # Create a list to store the expanded data
-    expanded_data = []
-    
-    # Process each row
-    for _, row in df.iterrows():
-        naics_code = row["NAICS Code"]
-        naics_name = row["NAICS Name"]
+    try:
+        # Load the correct sheet as specified by user
+        df = pd.read_excel("usbusinesses.xlsx", sheet_name="AnnualSales-Jan-2024", skiprows=2)
         
-        # Columns C to L contain firm counts by revenue tier
-        tier_cols = columns[2:12] if len(columns) >= 12 else columns[2:]
+        # Columns are specified by the user:
+        # - NAICS codes in column A
+        # - NAICS names in column B
+        # - Count of firms by revenue tier in columns C to L
+        # - Total count in column M
         
-        # For each tier, create a row with the count, low and high revenue
-        for i, tier_col in enumerate(tier_cols):
-            if i < len(revenue_tiers):
-                low, high = revenue_tiers[i]
-                count = row[tier_col] if not pd.isna(row[tier_col]) else 0
+        # Rename columns based on position
+        columns = df.columns.tolist()
+        column_rename = {}
+        
+        # First two columns are NAICS Code and NAICS Name
+        if len(columns) >= 2:
+            column_rename[columns[0]] = "NAICS Code"
+            column_rename[columns[1]] = "NAICS Name"
+        
+        # Apply column renaming
+        df = df.rename(columns=column_rename)
+        
+        # Create revenue tier dataframes for each range
+        # Define the revenue ranges for each tier (columns C to L)
+        revenue_tiers = [
+            (0, 50),      # Column C: $0-50M
+            (50, 100),    # Column D: $50-100M 
+            (100, 250),   # Column E: $100-250M
+            (250, 500),   # Column F: $250-500M
+            (500, 1000),  # Column G: $500M-1B
+            (1000, 2500), # Column H: $1-2.5B
+            (2500, 5000), # Column I: $2.5-5B
+            (5000, 10000), # Column J: $5-10B
+            (10000, 50000), # Column K: $10-50B
+            (50000, 100000) # Column L: $50B+
+        ]
+        
+        # Create a list to store the expanded data
+        expanded_data = []
+        
+        # Process each row
+        for _, row in df.iterrows():
+            try:
+                naics_code = row["NAICS Code"]
+                naics_name = row["NAICS Name"] if "NAICS Name" in row else "Unknown"
                 
-                # Convert count to numeric before comparison
-                try:
-                    count = float(count) if count != '' else 0
-                except (ValueError, TypeError):
-                    count = 0
-                    
-                # Only add rows with counts > 0
-                if count > 0:
-                    expanded_data.append({
-                        "NAICS Code": naics_code,
-                        "NAICS Name": naics_name,
-                        "Sales ($Mil) Low": low,
-                        "Sales ($Mil) High": high,
-                        "Company Count": count
-                    })
-    
-    # Create new dataframe with the expanded data
-    expanded_df = pd.DataFrame(expanded_data)
-    
-    # If no data was created, create a simple fallback dataframe
-    if len(expanded_df) == 0:
-        st.warning("No valid data found in the spreadsheet. Using default data for demonstration.")
-        expanded_df = pd.DataFrame({
+                # Columns C to L contain firm counts by revenue tier
+                tier_cols = columns[2:12] if len(columns) >= 12 else columns[2:]
+                
+                # For each tier, create a row with the count, low and high revenue
+                for i, tier_col in enumerate(tier_cols):
+                    if i < len(revenue_tiers):
+                        low, high = revenue_tiers[i]
+                        count = row[tier_col] if not pd.isna(row[tier_col]) else 0
+                        
+                        # Convert count to numeric before comparison
+                        try:
+                            count = float(count) if count != '' else 0
+                        except (ValueError, TypeError):
+                            count = 0
+                            
+                        # Only add rows with counts > 0
+                        if count > 0:
+                            expanded_data.append({
+                                "NAICS Code": naics_code,
+                                "NAICS Name": naics_name,
+                                "Sales ($Mil) Low": low,
+                                "Sales ($Mil) High": high,
+                                "Company Count": count
+                            })
+            except KeyError as e:
+                st.warning(f"Error processing row: {e}")
+                continue
+        
+        # Create new dataframe with the expanded data
+        expanded_df = pd.DataFrame(expanded_data)
+        
+        # If no data was created, create a simple fallback dataframe
+        if len(expanded_df) == 0:
+            st.warning("No valid data found in the spreadsheet. Using default data for demonstration.")
+            expanded_df = pd.DataFrame({
+                "NAICS Code": ["Default"],
+                "NAICS Name": ["Default Industry"],
+                "Sales ($Mil) Low": [0],
+                "Sales ($Mil) High": [1000],
+                "Company Count": [100]
+            })
+        
+        return expanded_df
+    except Exception as e:
+        st.error(f"Error loading NAICS data: {e}")
+        # Return a default dataframe
+        return pd.DataFrame({
             "NAICS Code": ["Default"],
             "NAICS Name": ["Default Industry"],
             "Sales ($Mil) Low": [0],
             "Sales ($Mil) High": [1000],
             "Company Count": [100]
         })
-    
-    return expanded_df
 
-naics_df = load_naics_data()
+try:
+    naics_df = load_naics_data()
+except Exception as e:
+    st.error(f"Failed to load NAICS data. Please check the Excel file. Error: {e}")
+    # Create a default dataframe
+    naics_df = pd.DataFrame({
+        "NAICS Code": ["Default"],
+        "NAICS Name": ["Default Industry"],
+        "Sales ($Mil) Low": [0],
+        "Sales ($Mil) High": [1000],
+        "Company Count": [100]
+    })
 
 # Title and description
 st.title('Security Budget Calculator')
@@ -934,7 +960,7 @@ with tab4:
         showlegend=False
     )
     
-    # Display chart
+    # Display chart 
     st.plotly_chart(fig, use_container_width=True)
 
 with tab1:
@@ -1490,4 +1516,3 @@ with st.expander("View Industry Benchmark Reference Table", expanded=False):
 st.markdown("---")
 st.caption("Data Sources: Gartner, IDC, Deloitte, Flexera, HIMSS, EDUCAUSE")
 st.caption("Created by Oliver Rochford | [GitHub](https://github.com/RockefellerArchiveCenter/budget_calculator)")
-
