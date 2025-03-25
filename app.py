@@ -2,6 +2,8 @@ import streamlit as st
 import plotly.io as pio
 import pages.budget_calculator as budget_calculator
 import pages.industry_benchmarks as industry_benchmarks
+import pages.naics_analysis as naics_analysis
+import pages.sector_tam_analysis as sector_tam_analysis
 from data import initialize_session_state
 from utils import set_custom_css, display_logo
 
@@ -33,7 +35,7 @@ The code is open-source under the BSD license at [github](https://github.com/oro
 ''')
 
 # Create tabs for different views
-tab1, tab2 = st.tabs(["Budget Calculator", "Industry Benchmarks"])
+tab1, tab2, tab3, tab4 = st.tabs(["Budget Calculator", "Industry Benchmarks", "NAICS Analysis", "Sector TAM Analysis"])
 
 # Tab 1: Budget Calculator
 with tab1:
@@ -41,4 +43,12 @@ with tab1:
 
 # Tab 2: Industry Benchmarks
 with tab2:
-    industry_benchmarks.show() 
+    industry_benchmarks.show()
+
+# Tab 3: NAICS Analysis
+with tab3:
+    naics_analysis.show()
+
+# Tab 4: Sector TAM Analysis
+with tab4:
+    sector_tam_analysis.show() 

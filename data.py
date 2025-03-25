@@ -1,6 +1,70 @@
 import streamlit as st
 import numpy as np
 
+# Define NAICS revenue tiers based on official business statistics
+NAICS_REVENUE_TIERS = {
+    "Under 500,000": 13918257,
+    "500,000 - 999,999": 792624,
+    "1,000,000 - 2,499,999": 546969,
+    "2,500,000 - 4,999,999": 222344,
+    "5,000,000 - 9,999,999": 144641,
+    "10,000,000 - 99,999,999": 176000,
+    "100,000,000 - 499,999,999": 23670,
+    "500,000,000 - 999,999,999": 4070,
+    "1,000,000,000+": 5161,
+    "Uncoded records": 1935963
+}
+
+# Define revenue tiers for analysis
+REVENUE_TIERS = [
+    (0, 0.5),           # Under 500,000
+    (0.5, 1),           # 500,000 - 999,999
+    (1, 2.5),           # 1,000,000 - 2,499,999
+    (2.5, 5),           # 2,500,000 - 4,999,999
+    (5, 10),            # 5,000,000 - 9,999,999
+    (10, 100),          # 10,000,000 - 99,999,999
+    (100, 500),         # 100,000,000 - 499,999,999
+    (500, 1000),        # 500,000,000 - 999,999,999
+    (1000, float('inf')) # 1,000,000,000+
+]
+
+# Map revenue tiers to actual business counts
+REVENUE_TIER_COUNTS = {
+    (0, 0.5): 13918257,           # Under 500,000
+    (0.5, 1): 792624,             # 500,000 - 999,999
+    (1, 2.5): 546969,             # 1,000,000 - 2,499,999
+    (2.5, 5): 222344,             # 2,500,000 - 4,999,999
+    (5, 10): 144641,              # 5,000,000 - 9,999,999
+    (10, 100): 176000,            # 10,000,000 - 99,999,999
+    (100, 500): 23670,            # 100,000,000 - 499,999,999
+    (500, 1000): 4070,            # 500,000,000 - 999,999,999
+    (1000, float('inf')): 5161    # 1,000,000,000+
+}
+
+# Define major NAICS sectors with codes and names
+NAICS_SECTORS = [
+    {"code": "11", "name": "Agriculture, Forestry, Fishing and Hunting"},
+    {"code": "21", "name": "Mining, Quarrying, and Oil and Gas Extraction"},
+    {"code": "22", "name": "Utilities"},
+    {"code": "23", "name": "Construction"},
+    {"code": "31-33", "name": "Manufacturing"},
+    {"code": "42", "name": "Wholesale Trade"},
+    {"code": "44-45", "name": "Retail Trade"},
+    {"code": "48-49", "name": "Transportation and Warehousing"},
+    {"code": "51", "name": "Information"},
+    {"code": "52", "name": "Finance and Insurance"},
+    {"code": "53", "name": "Real Estate and Rental and Leasing"},
+    {"code": "54", "name": "Professional, Scientific, and Technical Services"},
+    {"code": "55", "name": "Management of Companies and Enterprises"},
+    {"code": "56", "name": "Administrative and Support Services"},
+    {"code": "61", "name": "Educational Services"},
+    {"code": "62", "name": "Health Care and Social Assistance"},
+    {"code": "71", "name": "Arts, Entertainment, and Recreation"},
+    {"code": "72", "name": "Accommodation and Food Services"},
+    {"code": "81", "name": "Other Services (except Public Administration)"},
+    {"code": "92", "name": "Public Administration"}
+]
+
 # Define industry-specific IT budget percentages based on updated industry data
 INDUSTRY_IT_SPEND = {
     "Weighted Average": {"min": 4, "max": 7, "typical": 5.5},
@@ -134,12 +198,28 @@ CHART_COLORS = {
 
 # Initialize session state variables
 def initialize_session_state():
+    """Initialize all session state variables with proper types"""
+    # Get default industry preset
+    default_industry = "Weighted Average"
+    default_preset = INDUSTRY_PRESETS[default_industry]
+    
+    # Initialize percentage values as floats
     if 'it_percentage' not in st.session_state:
-        st.session_state.it_percentage = 5.5
+        st.session_state.it_percentage = float(default_preset["it_typical"])
     if 'security_percentage' not in st.session_state:
-        st.session_state.security_percentage = 9.5
+        st.session_state.security_percentage = float(default_preset["security_typical"])
+    
+    # Initialize numeric values as integers
     if 'annual_revenue' not in st.session_state:
         st.session_state.annual_revenue = 100
+    if 'max_chart_revenue' not in st.session_state:
+        st.session_state.max_chart_revenue = 500
+    
+    # Initialize industry selection
+    if 'selected_industry' not in st.session_state:
+        st.session_state.selected_industry = default_industry
+    
+    # Initialize calculation history
     if 'user_calculations' not in st.session_state:
         st.session_state.user_calculations = []
     if 'custom_industries' not in st.session_state:
