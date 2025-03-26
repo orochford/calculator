@@ -126,8 +126,7 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         textposition='middle right',
         textfont=dict(
             color=chart_colors["typical"],
-            size=10,
-            family="Arial"
+            size=10
         ),
         hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
                     f"<b>Typical Calculation:</b><br>" +
@@ -150,8 +149,7 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         textposition='middle right',
         textfont=dict(
             color=chart_colors["user_selection"],
-            size=12,
-            family="Arial"
+            size=12
         ),
         hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
                     f"<b>User Selection Calculation:</b><br>" +

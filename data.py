@@ -253,7 +253,8 @@ CHART_COLORS = {
     "lower_bound": "#008581",  # Teal
     "upper_bound": "#E4509A",  # Dark pink
     "typical": "#96E4B0",  # Mint green
-    "user_calculations": ['#FFC300', '#C70039', '#900C3F', '#581845', '#2874A6']  # User calc colors
+    "user_calculations": ['#FFC300', '#C70039', '#900C3F', '#581845', '#2874A6'],  # User calc colors
+    "range": "rgba(31, 119, 180, 0.1)"  # Light blue with transparency for range area
 }
 
 # Initialize session state variables
