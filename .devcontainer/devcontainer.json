@@ -6,20 +6,23 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "security_budget_calculator.py"
+        "app.py"
       ]
     },
     "vscode": {
       "settings": {},
       "extensions": [
         "ms-python.python",
-        "ms-python.vscode-pylance"
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "streetsidesoftware.code-spell-checker"
       ]
     }
   },
-  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
+  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit pandas numpy plotly openpyxl; echo '✅ Packages installed and Requirements met'",
   "postAttachCommand": {
-    "server": "streamlit run security_budget_calculator.py --server.enableCORS false --server.enableXsrfProtection false"
+    "server": "streamlit run app.py --server.enableCORS false --server.enableXsrfProtection false"
   },
   "portsAttributes": {
     "8501": {
@@ -29,5 +32,6 @@
   },
   "forwardPorts": [
     8501
-  ]
+  ],
+  "remoteUser": "vscode"
 }
