@@ -6,14 +6,7 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "app.py",
-        "data.py",
-        "pages/budget_calculator.py",
-        "pages/industry_benchmarks.py",
-        "pages/naics_analysis.py",
-        "pages/sector_tam_analysis.py",
-        "usbusinesses.xlsx",
-        "utils.py"
+        "app.py"
       ]
     },
     "vscode": {
