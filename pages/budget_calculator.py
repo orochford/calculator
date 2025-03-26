@@ -59,8 +59,8 @@ def show():
     with st.sidebar:
         st.header("Budget Controls")
         
-        # Industry selection - fixed to use only session state
-        selected_industry = st.selectbox(
+        # Industry selection - changed from selectbox to radio buttons
+        selected_industry = st.radio(
             "Select Industry",
             options=list(INDUSTRY_PRESETS.keys()),
             index=list(INDUSTRY_PRESETS.keys()).index(st.session_state.selected_industry)

@@ -92,6 +92,9 @@ def show():
     # Sort by Security Budget for better visualization
     viz_data = viz_data.sort_values('Security Budget ($M)', ascending=False)
     
+    # Filter out the "Other" sector from visualization data
+    viz_data = viz_data[viz_data['Sector'] != 'Other']
+    
     # Create a mixed chart (bar for companies, line for security budget)
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
