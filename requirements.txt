@@ -5,3 +5,4 @@ plotly-express==0.4.1
 numpy==1.26.3
 pillow==10.2.0
 requests==2.31.0 
+openpyxl
