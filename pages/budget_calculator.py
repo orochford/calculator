@@ -210,9 +210,14 @@ def show():
     
     # Budget Table section
     st.subheader("Budget Breakdown Table")
-    df = create_budget_table(revenue_array, it_percentage, security_percentage)
-    styled_df = df.style.apply(highlight_selected_revenue, axis=1)
-    st.dataframe(styled_df, hide_index=True, use_container_width=True)
+    
+    # Create a container with fixed height for the table
+    table_container = st.container()
+    with table_container:
+        df = create_budget_table(revenue_array, it_percentage, security_percentage)
+        styled_df = df.style.apply(highlight_selected_revenue, axis=1)
+        st.dataframe(styled_df, hide_index=True, use_container_width=True, height=400)
+    
     st.caption(f"""
     Table shows security budgets at different revenue tiers with {it_percentage}% IT budget.
     Your current revenue is highlighted. Security columns show budget at 5%, 10%, 15%, 20%, and your selected {security_percentage}% of IT budget.
