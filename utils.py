@@ -77,177 +77,66 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
                               typical_it_percentage=0, min_security_percentage=0, 
                               max_security_percentage=0, typical_security_percentage=0,
                               chart_colors=None):
-    """
-    Create the security budget chart with clear separation of trend lines.
-    This function ensures proper z-index and drawing order to prevent overlap.
-    """
-    # Default colors if not provided
+    """Create a scatter plot showing security budget calculations"""
     if chart_colors is None:
         chart_colors = {
-            "user_selection": "#FF5733",  # Orange
-            "bar_colors": ["#008581", "#4C9C8B", "#96E4B0", "#FFDAE8"],  # Teal to pink gradient
-            "lower_bound": "#008581",  # Teal
-            "upper_bound": "#E4509A",  # Dark pink
-            "typical": "#96E4B0",  # Mint green
-            "user_calculations": ['#FFC300', '#C70039', '#900C3F', '#581845', '#2874A6']  # User calc colors
+            "user_selection": "#FF4B4B",
+            "typical": "#1F77B4",
+            "min": "#2CA02C",
+            "max": "#FF7F0E",
+            "range": "rgba(31, 119, 180, 0.1)"
         }
     
     fig = go.Figure()
     
-    # Add bar traces for percentages around the selected security percentage
-    display_it_percentage = current_it
-    
-    # Create percentages centered around the selected value
-    security_percentages = [
-        max(1, current_security - 6),
-        max(1, current_security - 3),
-        current_security,
-        min(25, current_security + 3)
-    ]
-    
-    # Bar width configuration for clearer grouping
-    bar_width = 0.15
-    
-    # Add the bar graphs first (lower z-index)
-    for idx, percent in enumerate(security_percentages):
-        # Use the same IT percentage as trend lines for consistency
-        security_budget = revenue_array * (display_it_percentage / 100) * (percent / 100)
-        
-        # Highlight the selected percentage
-        is_selected = percent == current_security
-        marker_color = chart_colors["bar_colors"][idx]
-        marker_line_width = 3 if is_selected else 2
-        
-        fig.add_trace(go.Bar(
-            x=x_positions + (idx - 1.5) * bar_width,  # grouped bars
-            y=security_budget,
-            name=f"{percent}% of IT Budget ({display_it_percentage}% IT){' (Selected)' if is_selected else ''}",
-            marker_color=marker_color,
-            marker_line_width=marker_line_width,  # Thicker border for selected
-            marker_line_color='rgba(0,0,0,0.7)',  # Darker border
-            width=bar_width,
-            text=[f"${val:.2f}M" for val in security_budget],
-            textposition='outside',
-            textfont=dict(
-                size=11,  # Larger text
-                family="Arial",
-                color="rgba(0,0,0,0.9)"  # Darker text
-            ),
-            hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                        "<b>Calculation:</b><br>" +
-                        f"IT Budget: {display_it_percentage}% of Revenue<br>" +
-                        f"Security Budget: {percent}% of IT Budget<br>" +
-                        f"Final: {percent}% of {display_it_percentage}% = {(display_it_percentage * percent / 100):.2f}% of Revenue<br>" +
-                        "<b>Result:</b> $%{y:.2f}M<extra></extra>",
-            customdata=revenue_array
-        ))
-    
-    # Add trend lines in a specific order, starting with industry standards (if enabled)
+    # Add range area if show_ranges is True
     if show_ranges:
-        # Lower bound trend line (lowest visual priority)
-        lower_security_budget = revenue_array * (min_it_percentage / 100) * (min_security_percentage / 100)
+        min_budget = revenue_array * (min_it_percentage / 100) * (min_security_percentage / 100)
+        max_budget = revenue_array * (max_it_percentage / 100) * (max_security_percentage / 100)
+        
         fig.add_trace(go.Scatter(
             x=x_positions,
-            y=lower_security_budget,
-            mode='lines+text',
-            name=f"Lower Bound ({min_security_percentage}% of {min_it_percentage}% IT)",
-            line=dict(color=chart_colors["lower_bound"], width=2, dash='dot'),
-            text=[f"${y:.2f}M" for y in lower_security_budget],
-            textposition='bottom right',
-            textfont=dict(
-                color=chart_colors["lower_bound"],
-                size=10,
-                family="Arial",
-            ),
-            hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                        f"<b>Lower Bound Calculation:</b><br>" +
-                        f"IT Budget: {min_it_percentage}% of Revenue<br>" +
-                        f"Security Budget: {min_security_percentage}% of IT Budget<br>" +
-                        f"Final: {min_security_percentage}% of {min_it_percentage}% = {(min_it_percentage * min_security_percentage / 100):.2f}% of Revenue<br>" +
-                        "<b>Result:</b> $%{y:.2f}M<extra></extra>",
-            customdata=revenue_array
+            y=max_budget,
+            fill=None,
+            mode='lines',
+            line=dict(color=chart_colors["range"], width=0),
+            showlegend=False,
+            hoverinfo='skip'
         ))
         
-        # Upper bound trend line
-        upper_security_budget = revenue_array * (max_it_percentage / 100) * (max_security_percentage / 100)
         fig.add_trace(go.Scatter(
             x=x_positions,
-            y=upper_security_budget,
-            mode='lines+text',
-            name=f"Upper Bound ({max_security_percentage}% of {max_it_percentage}% IT)",
-            line=dict(color=chart_colors["upper_bound"], width=2, dash='dot'),
-            text=[f"${y:.2f}M" for y in upper_security_budget],
-            textposition='top right',
-            textfont=dict(
-                color=chart_colors["upper_bound"],
-                size=10,
-                family="Arial",
-            ),
-            hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                        f"<b>Upper Bound Calculation:</b><br>" +
-                        f"IT Budget: {max_it_percentage}% of Revenue<br>" +
-                        f"Security Budget: {max_security_percentage}% of IT Budget<br>" +
-                        f"Final: {max_security_percentage}% of {max_it_percentage}% = {(max_it_percentage * max_security_percentage / 100):.2f}% of Revenue<br>" +
-                        "<b>Result:</b> $%{y:.2f}M<extra></extra>",
-            customdata=revenue_array
-        ))
-        
-        # Typical range trend line
-        typical_security_budget = revenue_array * (typical_it_percentage / 100) * (typical_security_percentage / 100)
-        fig.add_trace(go.Scatter(
-            x=x_positions,
-            y=typical_security_budget,
-            mode='lines+text',
-            name=f"Typical ({typical_security_percentage}% of {typical_it_percentage}% IT)",
-            line=dict(color=chart_colors["typical"], width=3),
-            text=[f"${y:.2f}M" for y in typical_security_budget],
-            textposition='middle right',
-            textfont=dict(
-                color=chart_colors["typical"],
-                size=10,
-                family="Arial",
-            ),
-            hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                        f"<b>Typical Calculation:</b><br>" +
-                        f"IT Budget: {typical_it_percentage}% of Revenue<br>" +
-                        f"Security Budget: {typical_security_percentage}% of IT Budget<br>" +
-                        f"Final: {typical_security_percentage}% of {typical_it_percentage}% = {(typical_it_percentage * typical_security_percentage / 100):.2f}% of Revenue<br>" +
-                        "<b>Result:</b> $%{y:.2f}M<extra></extra>",
-            customdata=revenue_array
+            y=min_budget,
+            fill='tonexty',
+            mode='lines',
+            line=dict(color=chart_colors["range"], width=0),
+            name='Typical Range',
+            hoverinfo='skip'
         ))
     
-    # Add saved user calculations trend lines (higher z-index than industry standards)
-    for idx, calc in enumerate(st.session_state.user_calculations):
-        user_it = calc['it_percentage']
-        user_security = calc['security_percentage']
-        color_idx = idx % len(chart_colors["user_calculations"])
-        
-        user_calc_budget = revenue_array * (user_it / 100) * (user_security / 100)
-        fig.add_trace(go.Scatter(
-            x=x_positions,
-            y=user_calc_budget,
-            mode='lines+text',
-            name=f"User Calc #{idx+1} ({user_security}% of {user_it}% IT)",
-            line=dict(
-                color=chart_colors["user_calculations"][color_idx], 
-                width=2.5, 
-                dash='dash'
-            ),
-            text=[f"${y:.2f}M" for y in user_calc_budget],
-            textposition='middle right',
-            textfont=dict(
-                color=chart_colors["user_calculations"][color_idx],
-                size=10,
-                family="Arial",
-            ),
-            hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
-                        f"<b>User Calculation #{idx+1}:</b><br>" +
-                        f"IT Budget: {user_it}% of Revenue<br>" +
-                        f"Security Budget: {user_security}% of IT Budget<br>" +
-                        f"Final: {user_security}% of {user_it}% = {(user_it * user_security / 100):.2f}% of Revenue<br>" +
-                        "<b>Result:</b> $%{y:.2f}M<extra></extra>",
-            customdata=revenue_array
-        ))
+    # Add typical line
+    typical_budget = revenue_array * (typical_it_percentage / 100) * (typical_security_percentage / 100)
+    fig.add_trace(go.Scatter(
+        x=x_positions,
+        y=typical_budget,
+        mode='lines+text',
+        name=f"Typical ({typical_security_percentage}% of {typical_it_percentage}% IT)",
+        line=dict(color=chart_colors["typical"], width=2, dash='dash'),
+        text=[f"${y:.2f}M" for y in typical_budget],
+        textposition='middle right',
+        textfont=dict(
+            color=chart_colors["typical"],
+            size=10,
+            family="Arial"
+        ),
+        hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
+                    f"<b>Typical Calculation:</b><br>" +
+                    f"IT Budget: {typical_it_percentage}% of Revenue<br>" +
+                    f"Security Budget: {typical_security_percentage}% of IT Budget<br>" +
+                    f"Final: {typical_security_percentage}% of {typical_it_percentage}% = {(typical_it_percentage * typical_security_percentage / 100):.2f}% of Revenue<br>" +
+                    "<b>Result:</b> $%{y:.2f}M<extra></extra>",
+        customdata=revenue_array
+    ))
     
     # Add current user selection line LAST to ensure it's on top (highest z-index)
     current_security_budget = revenue_array * (current_it / 100) * (current_security / 100)
@@ -261,9 +150,8 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         textposition='middle right',
         textfont=dict(
             color=chart_colors["user_selection"],
-            size=12,  # Slightly larger font
-            family="Arial",
-            weight="bold",
+            size=12,
+            family="Arial"
         ),
         hovertemplate="<b>Revenue:</b> $%{customdata}M<br>" +
                     f"<b>User Selection Calculation:</b><br>" +
@@ -274,74 +162,19 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         customdata=revenue_array
     ))
     
-    # Update layout with improved visual styling
+    # Update layout
     fig.update_layout(
-        title=dict(
-            text=f"Security Budget by Annual Revenue",
-            y=0.99,
-            x=0.5,
-            xanchor='center',
-            yanchor='top',
-            font=dict(size=16)
-        ),
-        xaxis_title="Annual Revenue (Million $)",
-        yaxis_title="Security Budget (Million $)",
-        barmode='group',
-        bargap=0.15,
-        bargroupgap=0.02,
-        height=700,
-        width=None,
-        autosize=True,
-        font=dict(family="Arial", size=11),
-        plot_bgcolor='white',
-        margin=dict(l=80, r=80, t=150, b=100),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=0.98,
-            xanchor="center",
-            x=0.5,
-            bgcolor='rgba(255, 255, 255, 0.8)',
-            font=dict(size=10)
-        ),
-        uniformtext=dict(mode='hide', minsize=8),
+        title="Security Budget by Revenue",
+        xaxis_title="Revenue (Millions)",
+        yaxis_title="Security Budget (Millions)",
         showlegend=True,
-    )
-    
-    # Add subtitle for current settings
-    fig.add_annotation(
-        text=f"IT Budget: {current_it}% of Revenue | Security Budget: {current_security}% of IT Budget",
-        xref="paper",
-        yref="paper",
-        x=0.5,
-        y=0.95,
-        showarrow=False,
-        font=dict(size=12),
-        yshift=0
-    )
-    
-    # Configure axis formatting
-    fig.update_xaxes(
-        showgrid=True,
-        gridcolor='lightgray',
-        tickmode='array',
-        tickvals=x_positions,
-        ticktext=[f"${rev}M" for rev in revenue_array],
-        tickangle=45,
-        tickfont=dict(size=10),
-        minor_showgrid=False,
-        dtick=1,
-    )
-    
-    fig.update_yaxes(
-        showgrid=True,
-        gridcolor='lightgray',
-        tickprefix='$',
-        ticksuffix='M',
-        rangemode='tozero',
-        tickfont=dict(size=10),
-        minor_showgrid=False,
-        dtick='auto',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+        ),
+        hovermode='closest'
     )
     
     return fig
