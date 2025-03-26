@@ -117,7 +117,9 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         hovertemplate="<b>Revenue:</b> $%{x}M<br>" +
                     f"<b>IT:</b> {it_percentage}%<br>" +
                     "<b>Security:</b> 5% of IT<br>" +
-                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>"
+                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>",
+        text=["$" + f"{y:.2f}M" for y in security_5pct],
+        textposition='outside'
     ))
     
     fig.add_trace(go.Bar(
@@ -128,7 +130,9 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         hovertemplate="<b>Revenue:</b> $%{x}M<br>" +
                     f"<b>IT:</b> {it_percentage}%<br>" +
                     "<b>Security:</b> 10% of IT<br>" +
-                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>"
+                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>",
+        text=["$" + f"{y:.2f}M" for y in security_10pct],
+        textposition='outside'
     ))
     
     fig.add_trace(go.Bar(
@@ -139,7 +143,9 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         hovertemplate="<b>Revenue:</b> $%{x}M<br>" +
                     f"<b>IT:</b> {it_percentage}%<br>" +
                     "<b>Security:</b> 15% of IT<br>" +
-                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>"
+                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>",
+        text=["$" + f"{y:.2f}M" for y in security_15pct],
+        textposition='outside'
     ))
     
     fig.add_trace(go.Bar(
@@ -150,7 +156,9 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         hovertemplate="<b>Revenue:</b> $%{x}M<br>" +
                     f"<b>IT:</b> {it_percentage}%<br>" +
                     "<b>Security:</b> 20% of IT<br>" +
-                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>"
+                    "<b>Budget:</b> $%{y:.2f}M<extra></extra>",
+        text=["$" + f"{y:.2f}M" for y in security_20pct],
+        textposition='outside'
     ))
     
     # Add trend lines
@@ -199,7 +207,9 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         hovertemplate="<b>Revenue:</b> $%{x}M<br>" +
                     "<b>Your Selection:</b> $%{y:.2f}M<br>" +
                     f"IT Budget: {current_it}% of Revenue<br>" +
-                    f"Security Budget: {current_security}% of IT Budget<extra></extra>"
+                    f"Security Budget: {current_security}% of IT Budget<extra></extra>",
+        text=["$" + f"{y:.2f}M" for y in user_budget],
+        textposition='top center'
     ))
     
     # Update layout with proper bar settings
@@ -219,14 +229,15 @@ def create_security_budget_chart(revenue_array, x_positions, current_it, current
         height=500,
         margin=dict(l=60, r=40, t=80, b=60),
         barmode='group',  # Use group mode for side-by-side bars
-        bargap=0.15,      # Gap between bars of adjacent location coordinates
-        bargroupgap=0.1   # Gap between bars of the same location coordinates
+        bargap=0.05,      # Gap between bars of adjacent location coordinates
+        bargroupgap=0.05, # Gap between bars of the same location coordinates
+        uniformtext=dict(mode='hide', minsize=8)  # Hide text that doesn't fit
     )
     
-    # Make the bars wider by reducing the number of bar groups
-    fig.update_layout(
-        bargap=0.05,      # Reduce gap between bar groups
-        bargroupgap=0.05  # Reduce gap within bar groups
+    # Add x-axis labels for revenue points
+    fig.update_xaxes(
+        tickvals=revenue_array,
+        ticktext=[f"${x}M" for x in revenue_array]
     )
     
     # Add a subtitle with the current settings

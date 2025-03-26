@@ -216,7 +216,7 @@ def show():
     with table_container:
         df = create_budget_table(revenue_array, it_percentage, security_percentage)
         styled_df = df.style.apply(highlight_selected_revenue, axis=1)
-        st.dataframe(styled_df, hide_index=True, use_container_width=True, height=400)
+        st.dataframe(styled_df, hide_index=True, use_container_width=True)
     
     st.caption(f"""
     Table shows security budgets at different revenue tiers with {it_percentage}% IT budget.
